@@ -3,7 +3,6 @@ package d2gamescreen
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -13,6 +12,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2screen"
@@ -20,6 +20,9 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2client/d2clientconnectiontype"
 	"github.com/OpenDiablo2/OpenDiablo2/d2script"
 )
+
+// logger instance for d2gamescreen
+var logger *d2util.Logger
 
 type mainMenuScreenMode int
 
@@ -176,7 +179,7 @@ func (v *MainMenu) OnLoad(loading d2screen.LoadingState) {
 	}
 
 	if err := v.inputManager.BindHandler(v); err != nil {
-		fmt.Println("failed to add main menu as event handler")
+		logger.Error("failed to add main menu as event handler")
 	}
 }
 
@@ -185,28 +188,28 @@ func (v *MainMenu) loadBackgroundSprites() {
 
 	v.background, err = v.uiManager.NewSprite(d2resource.GameSelectScreen, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.background.SetPosition(backgroundX, backgroundY)
 
 	v.trademarkBackground, err = v.uiManager.NewSprite(d2resource.TrademarkScreen, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.trademarkBackground.SetPosition(backgroundX, backgroundY)
 
 	v.tcpIPBackground, err = v.uiManager.NewSprite(d2resource.TCPIPBackground, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.tcpIPBackground.SetPosition(backgroundX, backgroundY)
 
 	v.serverIPBackground, err = v.uiManager.NewSprite(d2resource.PopUpOkCancel, d2resource.PaletteFechar)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.serverIPBackground.SetPosition(serverIPbackgroundX, serverIPbackgroundY)
@@ -265,7 +268,7 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoLeft, err = v.uiManager.NewSprite(d2resource.Diablo2LogoFireLeft, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.diabloLogoLeft.SetEffect(d2enum.DrawEffectModulate)
@@ -275,7 +278,7 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoRight, err = v.uiManager.NewSprite(d2resource.Diablo2LogoFireRight, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.diabloLogoRight.SetEffect(d2enum.DrawEffectModulate)
@@ -284,14 +287,14 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoLeftBack, err = v.uiManager.NewSprite(d2resource.Diablo2LogoBlackLeft, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.diabloLogoLeftBack.SetPosition(diabloLogoX, diabloLogoY)
 
 	v.diabloLogoRightBack, err = v.uiManager.NewSprite(d2resource.Diablo2LogoBlackRight, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.diabloLogoRightBack.SetPosition(diabloLogoX, diabloLogoY)
@@ -392,7 +395,7 @@ func (v *MainMenu) onGithubButtonClicked() {
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
 	}
 }
 
@@ -415,18 +418,22 @@ func (v *MainMenu) renderBackgrounds(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeTrademark:
 		if err := v.trademarkBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
+			logger.Error(err.Error())
 			return
 		}
 	case ScreenModeServerIP:
 		if err := v.serverIPBackground.RenderSegmented(screen, 2, 1, 0); err != nil {
+			logger.Error(err.Error())
 			return
 		}
 	case ScreenModeTCPIP:
 		if err := v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
+			logger.Error(err.Error())
 			return
 		}
 	default:
 		if err := v.background.RenderSegmented(screen, 4, 3, 0); err != nil {
+			logger.Error(err.Error())
 			return
 		}
 	}
