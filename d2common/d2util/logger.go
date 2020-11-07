@@ -134,7 +134,7 @@ func (l *Logger) Errorf(fmtMsg string, args ...interface{}) {
 	l.Error(fmt.Sprintf(fmtMsg, args...))
 }
 
-// Error logs an error message
+// Fatal logs an fatal error message
 func (l *Logger) Fatal(msg string) {
 	if l == nil || l.level < LogLevelFatal {
 		return
@@ -144,7 +144,7 @@ func (l *Logger) Fatal(msg string) {
 	os.Exit(1)
 }
 
-// Errorf formats and then logs a error message
+// Fatalf formats and then logs a fatal error message
 func (l *Logger) Fatalf(fmtMsg string, args ...interface{}) {
 	l.Fatal(fmt.Sprintf(fmtMsg, args...))
 }

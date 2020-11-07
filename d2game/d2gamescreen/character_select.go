@@ -2,7 +2,6 @@ package d2gamescreen
 
 import (
 	"image/color"
-	"log"
 	"math"
 	"os"
 
@@ -244,7 +243,7 @@ func (v *CharacterSelect) loadOkCancelBox() {
 
 	v.okCancelBox, err = v.uiManager.NewSprite(d2resource.PopUpOkCancel, d2resource.PaletteFechar)
 	if err != nil {
-		log.Print(err.Error())
+		logger.Error(err.Error())
 	}
 
 	okCancelX, okCancelY := 270, 175

@@ -22,7 +22,7 @@ import (
 )
 
 // logger instance for d2gamescreen
-var logger *d2util.Logger
+var logger = *d2util.Logger
 
 type mainMenuScreenMode int
 

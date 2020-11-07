@@ -3,7 +3,6 @@ package d2gamescreen
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -66,13 +65,13 @@ func CreateCredits(navigator d2interface.Navigator, asset *d2asset.AssetManager,
 func (v *Credits) LoadContributors() []string {
 	file, err := os.Open(path.Join("./", "CONTRIBUTORS"))
 	if err != nil || file == nil {
-		log.Print("CONTRIBUTORS file is missing")
+		logger.Warning("CONTRIBUTORS file is missing")
 		return []string{"MISSING CONTRIBUTOR FILES!"}
 	}
 
 	defer func() {
 		if err = file.Close(); err != nil {
-			fmt.Printf("an error occurred while closing file: %s, err: %q\n", file.Name(), err)
+			logger.Error(fmt.Sprintf("an error occurred while closing file: %s, err: %q\n", file.Name(), err))
 		}
 	}()
 
@@ -92,7 +91,7 @@ func (v *Credits) OnLoad(loading d2screen.LoadingState) {
 
 	v.creditsBackground, err = v.uiManager.NewSprite(d2resource.CreditsBackground, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.creditsBackground.SetPosition(creditsX, creditsY)
@@ -113,7 +112,7 @@ func (v *Credits) OnLoad(loading d2screen.LoadingState) {
 
 	creditData, err := d2util.Utf16BytesToString(fileData[2:])
 	if err != nil {
-		log.Print(err)
+		logger.Error(err.Error())
 	}
 
 	v.creditsText = strings.Split(creditData, "\r\n")

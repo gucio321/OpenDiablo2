@@ -496,13 +496,13 @@ func (v *SelectHeroClass) onOkButtonClicked() {
 
 	playerState, err := v.CreateHeroState(heroName, v.selectedHero, statsState)
 	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create hero state!, err: %v\n") + err.Error())
+		logger.Error(fmt.Sprintf("failed to create hero state!, err: %v\n", err))
 		return
 	}
 
 	err = v.Save(playerState)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to save game state!, err: %v\n") + err.Error())
+		logger.Error(fmt.Sprintf("Failed to save game state!, err: %v\n", err))
 		return
 	}
 
