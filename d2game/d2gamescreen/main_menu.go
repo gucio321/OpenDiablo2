@@ -91,7 +91,6 @@ func CreateMainMenu(
 	ui *d2ui.UIManager,
 	buildInfo BuildInfo,
 ) (*MainMenu, error) {
-
 	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
 	if err != nil {
 		return nil, err

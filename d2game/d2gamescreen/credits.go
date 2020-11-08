@@ -16,10 +16,6 @@ import (
 )
 
 const (
-	CreaditsLogPrefix = "Credits"
-)
-
-const (
 	creditsX, creditsY               = 0, 0
 	charSelExitBtnX, charSelExitBtnY = 33, 543
 )
@@ -47,7 +43,7 @@ func CreateCredits( /*l d2util.LogLevel,*/ navigator d2interface.Navigator, asse
 	}
 
 	result.logger = d2util.NewLogger()
-	result.logger.SetPrefix(CreaditsLogPrefix)
+	result.logger.SetPrefix(logPrefix)
 
 	return result
 }
