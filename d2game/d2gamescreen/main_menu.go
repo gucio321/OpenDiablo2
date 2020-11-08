@@ -21,8 +21,9 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2script"
 )
 
-// logger instance for d2gamescreen
-var logger = *d2util.Logger
+const (
+	logPrefix = "Game Screen"
+)
 
 type mainMenuScreenMode int
 
@@ -79,8 +80,46 @@ type BuildInfo struct {
 	Branch, Commit string
 }
 
+// CreateMainMenu creates an instance of MainMenu
+func CreateMainMenu(
+	l d2util.LogLevel,
+	navigator d2interface.Navigator,
+	asset *d2asset.AssetManager,
+	renderer d2interface.Renderer,
+	inputManager d2interface.InputManager,
+	audioProvider d2interface.AudioProvider,
+	ui *d2ui.UIManager,
+	buildInfo BuildInfo,
+) (*MainMenu, error) {
+
+	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
+	if err != nil {
+		return nil, err
+	}
+
+	mainMenu := &MainMenu{
+		asset:          asset,
+		screenMode:     ScreenModeUnknown,
+		leftButtonHeld: true,
+		renderer:       renderer,
+		inputManager:   inputManager,
+		audioProvider:  audioProvider,
+		navigator:      navigator,
+		buildInfo:      buildInfo,
+		uiManager:      ui,
+		heroState:      heroStateFactory,
+	}
+	mainMenu.logger = *d2util.NewLogger()
+	mainMenu.logger.SetPrefix(logPrefix)
+	mainMenu.logger.SetLevel(l)
+
+	return mainMenu, nil
+}
+
 // MainMenu represents the main menu
 type MainMenu struct {
+	logger d2util.Logger
+
 	tcpIPBackground     *d2ui.Sprite
 	trademarkBackground *d2ui.Sprite
 	background          *d2ui.Sprite
@@ -126,37 +165,6 @@ type MainMenu struct {
 	buildInfo BuildInfo
 }
 
-// CreateMainMenu creates an instance of MainMenu
-func CreateMainMenu(
-	navigator d2interface.Navigator,
-	asset *d2asset.AssetManager,
-	renderer d2interface.Renderer,
-	inputManager d2interface.InputManager,
-	audioProvider d2interface.AudioProvider,
-	ui *d2ui.UIManager,
-	buildInfo BuildInfo,
-) (*MainMenu, error) {
-	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
-	if err != nil {
-		return nil, err
-	}
-
-	mainMenu := &MainMenu{
-		asset:          asset,
-		screenMode:     ScreenModeUnknown,
-		leftButtonHeld: true,
-		renderer:       renderer,
-		inputManager:   inputManager,
-		audioProvider:  audioProvider,
-		navigator:      navigator,
-		buildInfo:      buildInfo,
-		uiManager:      ui,
-		heroState:      heroStateFactory,
-	}
-
-	return mainMenu, nil
-}
-
 // OnLoad is called to load the resources for the main menu
 func (v *MainMenu) OnLoad(loading d2screen.LoadingState) {
 	v.audioProvider.PlayBGM(d2resource.BGMTitle)
@@ -179,7 +187,7 @@ func (v *MainMenu) OnLoad(loading d2screen.LoadingState) {
 	}
 
 	if err := v.inputManager.BindHandler(v); err != nil {
-		logger.Error("failed to add main menu as event handler")
+		v.logger.Error("failed to add main menu as event handler")
 	}
 }
 
@@ -188,28 +196,28 @@ func (v *MainMenu) loadBackgroundSprites() {
 
 	v.background, err = v.uiManager.NewSprite(d2resource.GameSelectScreen, d2resource.PaletteSky)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.background.SetPosition(backgroundX, backgroundY)
 
 	v.trademarkBackground, err = v.uiManager.NewSprite(d2resource.TrademarkScreen, d2resource.PaletteSky)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.trademarkBackground.SetPosition(backgroundX, backgroundY)
 
 	v.tcpIPBackground, err = v.uiManager.NewSprite(d2resource.TCPIPBackground, d2resource.PaletteSky)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.tcpIPBackground.SetPosition(backgroundX, backgroundY)
 
 	v.serverIPBackground, err = v.uiManager.NewSprite(d2resource.PopUpOkCancel, d2resource.PaletteFechar)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.serverIPBackground.SetPosition(serverIPbackgroundX, serverIPbackgroundY)
@@ -268,7 +276,7 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoLeft, err = v.uiManager.NewSprite(d2resource.Diablo2LogoFireLeft, d2resource.PaletteUnits)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.diabloLogoLeft.SetEffect(d2enum.DrawEffectModulate)
@@ -278,7 +286,7 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoRight, err = v.uiManager.NewSprite(d2resource.Diablo2LogoFireRight, d2resource.PaletteUnits)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.diabloLogoRight.SetEffect(d2enum.DrawEffectModulate)
@@ -287,14 +295,14 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoLeftBack, err = v.uiManager.NewSprite(d2resource.Diablo2LogoBlackLeft, d2resource.PaletteUnits)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.diabloLogoLeftBack.SetPosition(diabloLogoX, diabloLogoY)
 
 	v.diabloLogoRightBack, err = v.uiManager.NewSprite(d2resource.Diablo2LogoBlackRight, d2resource.PaletteUnits)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.diabloLogoRightBack.SetPosition(diabloLogoX, diabloLogoY)
@@ -395,7 +403,7 @@ func (v *MainMenu) onGithubButtonClicked() {
 	}
 
 	if err != nil {
-		logger.Fatal(err.Error())
+		v.logger.Fatal(err.Error())
 	}
 }
 
@@ -418,22 +426,22 @@ func (v *MainMenu) renderBackgrounds(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeTrademark:
 		if err := v.trademarkBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
-			logger.Error(err.Error())
+			v.logger.Error(err.Error())
 			return
 		}
 	case ScreenModeServerIP:
 		if err := v.serverIPBackground.RenderSegmented(screen, 2, 1, 0); err != nil {
-			logger.Error(err.Error())
+			v.logger.Error(err.Error())
 			return
 		}
 	case ScreenModeTCPIP:
 		if err := v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
-			logger.Error(err.Error())
+			v.logger.Error(err.Error())
 			return
 		}
 	default:
 		if err := v.background.RenderSegmented(screen, 4, 3, 0); err != nil {
-			logger.Error(err.Error())
+			v.logger.Error(err.Error())
 			return
 		}
 	}

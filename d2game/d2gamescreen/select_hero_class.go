@@ -273,6 +273,8 @@ func (hri *HeroRenderInfo) advance(elapsed float64) {
 
 // SelectHeroClass represents the Select Hero Class screen
 type SelectHeroClass struct {
+	logger d2util.Logger
+
 	asset           *d2asset.AssetManager
 	uiManager       *d2ui.UIManager
 	bgImage         *d2ui.Sprite
@@ -312,15 +314,17 @@ func CreateSelectHeroClass(
 	connectionType d2clientconnectiontype.ClientConnectionType,
 	connectionHost string,
 ) (*SelectHeroClass, error) {
+	var logger *CharacterSelect
+
 	playerStateFactory, err := d2hero.NewHeroStateFactory(asset)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.logger.Error(err.Error())
 		return nil, err
 	}
 
 	inventoryItemFactory, err := d2inventory.NewInventoryItemFactory(asset)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -496,13 +500,13 @@ func (v *SelectHeroClass) onOkButtonClicked() {
 
 	playerState, err := v.CreateHeroState(heroName, v.selectedHero, statsState)
 	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create hero state!, err: %v\n", err))
+		v.logger.Error(fmt.Sprintf("failed to create hero state!, err: %v\n", err))
 		return
 	}
 
 	err = v.Save(playerState)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to save game state!, err: %v\n", err))
+		v.logger.Error(fmt.Sprintf("Failed to save game state!, err: %v\n", err))
 		return
 	}
 
@@ -513,7 +517,7 @@ func (v *SelectHeroClass) onOkButtonClicked() {
 // Render renders the Select Hero Class screen
 func (v *SelectHeroClass) Render(screen d2interface.Surface) {
 	if err := v.bgImage.RenderSegmented(screen, 4, 3, 0); err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 		return
 	}
 
@@ -552,7 +556,7 @@ func (v *SelectHeroClass) Advance(tickTime float64) error {
 	canSelect := true
 
 	if err := v.campfire.Advance(tickTime); err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 		return err
 	}
 
@@ -647,13 +651,13 @@ func (v *SelectHeroClass) handleCursorButtonPress(hero d2enum.Hero, renderInfo *
 func (v *SelectHeroClass) setCurrentFrame(mouseHover bool, renderInfo *HeroRenderInfo) {
 	if mouseHover && renderInfo.Stance != d2enum.HeroStanceIdleSelected {
 		if err := renderInfo.IdleSelectedSprite.SetCurrentFrame(renderInfo.IdleSprite.GetCurrentFrame()); err != nil {
-			logger.Error(fmt.Sprintf("Could not set current frame to: %d\n", renderInfo.IdleSprite.GetCurrentFrame()))
+			v.logger.Error(fmt.Sprintf("Could not set current frame to: %d\n", renderInfo.IdleSprite.GetCurrentFrame()))
 		}
 
 		renderInfo.Stance = d2enum.HeroStanceIdleSelected
 	} else if !mouseHover && renderInfo.Stance != d2enum.HeroStanceIdle {
 		if err := renderInfo.IdleSprite.SetCurrentFrame(renderInfo.IdleSelectedSprite.GetCurrentFrame()); err != nil {
-			logger.Error(fmt.Sprintf("Could not set current frame to: %d\n", renderInfo.IdleSprite.GetCurrentFrame()))
+			v.logger.Error(fmt.Sprintf("Could not set current frame to: %d\n", renderInfo.IdleSprite.GetCurrentFrame()))
 		}
 
 		renderInfo.Stance = d2enum.HeroStanceIdle
@@ -747,9 +751,11 @@ func drawSprite(sprite *d2ui.Sprite, target d2interface.Surface) {
 }
 
 func advanceSprite(sprite *d2ui.Sprite, elapsed float64) {
+	var logger *SelectHeroClass
+
 	if sprite != nil {
 		if err := sprite.Advance(elapsed); err != nil {
-			logger.Error("Could not advance the sprite\n")
+			logger.logger.Error("Could not advance the sprite\n")
 		}
 	}
 }
@@ -764,7 +770,7 @@ func (v *SelectHeroClass) loadSprite(animationPath string, position image.Point,
 
 	sprite, err := v.uiManager.NewSprite(animationPath, d2resource.PaletteFechar)
 	if err != nil {
-		logger.Error("Could not load sprite for the animation: %s\n" + animationPath)
+		v.logger.Error("Could not load sprite for the animation: %s\n" + animationPath)
 		return nil
 	}
 
@@ -787,7 +793,7 @@ func (v *SelectHeroClass) loadSprite(animationPath string, position image.Point,
 func (v *SelectHeroClass) loadSoundEffect(sfx string) d2interface.SoundEffect {
 	result, err := v.audioProvider.LoadSound(sfx, false, false)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 		return nil
 	}
 

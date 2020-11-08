@@ -733,7 +733,7 @@ func (a *App) updateInitError(target d2interface.Surface) error {
 func (a *App) ToMainMenu() {
 	buildInfo := d2gamescreen.BuildInfo{Branch: a.gitBranch, Commit: a.gitCommit}
 
-	mainMenu, err := d2gamescreen.CreateMainMenu(a, a.asset, a.renderer, a.inputManager, a.audio, a.ui, buildInfo)
+	mainMenu, err := d2gamescreen.CreateMainMenu(d2util.LogLevelError, a, a.asset, a.renderer, a.inputManager, a.audio, a.ui, buildInfo)
 	if err != nil {
 		log.Print(err)
 		return

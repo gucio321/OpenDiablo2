@@ -10,6 +10,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapentity"
@@ -53,6 +54,8 @@ type CharacterSelect struct {
 	audioProvider d2interface.AudioProvider
 	renderer      d2interface.Renderer
 	navigator     d2interface.Navigator
+
+	logger *d2util.Logger
 }
 
 // CreateCharacterSelect creates the character select screen and returns a pointer to it
@@ -66,15 +69,17 @@ func CreateCharacterSelect(
 	connectionType d2clientconnectiontype.ClientConnectionType,
 	connectionHost string,
 ) (*CharacterSelect, error) {
+	var logger *CharacterSelect
+
 	playerStateFactory, err := d2hero.NewHeroStateFactory(asset)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.logger.Error(err.Error())
 		return nil, err
 	}
 
 	entityFactory, err := d2mapentity.NewMapEntityFactory(asset)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -153,7 +158,7 @@ func (v *CharacterSelect) OnLoad(loading d2screen.LoadingState) {
 
 	err := v.inputManager.BindHandler(v)
 	if err != nil {
-		logger.Error("failed to add Character Select screen as event handler")
+		v.logger.Error("failed to add Character Select screen as event handler")
 	}
 
 	loading.Progress(tenPercent)
@@ -204,7 +209,7 @@ func (v *CharacterSelect) loadBackground() {
 
 	v.background, err = v.uiManager.NewSprite(d2resource.CharacterSelectionBackground, d2resource.PaletteSky)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.background.SetPosition(bgX, bgY)
@@ -231,7 +236,7 @@ func (v *CharacterSelect) loadSelectionBox() {
 
 	v.selectionBox, err = v.uiManager.NewSprite(d2resource.CharacterSelectionSelectBox, d2resource.PaletteSky)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	selBoxX, selBoxY := 37, 86
@@ -243,7 +248,7 @@ func (v *CharacterSelect) loadOkCancelBox() {
 
 	v.okCancelBox, err = v.uiManager.NewSprite(d2resource.PopUpOkCancel, d2resource.PaletteFechar)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	okCancelX, okCancelY := 270, 175
@@ -370,7 +375,7 @@ func (v *CharacterSelect) onExitButtonClicked() {
 // Render renders the Character Select screen
 func (v *CharacterSelect) Render(screen d2interface.Surface) {
 	if err := v.background.RenderSegmented(screen, 4, 3, 0); err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 		return
 	}
 
@@ -379,7 +384,7 @@ func (v *CharacterSelect) Render(screen d2interface.Surface) {
 
 	if v.selectedCharacter > -1 && actualSelectionIndex >= 0 && actualSelectionIndex < 8 {
 		if err := v.selectionBox.RenderSegmented(screen, 2, 1, 0); err != nil {
-			logger.Error(err.Error())
+			v.logger.Error(err.Error())
 			return
 		}
 	}
@@ -405,7 +410,7 @@ func (v *CharacterSelect) Render(screen d2interface.Surface) {
 		screen.DrawRect(screenWidth, screenHeight, rgbaColor(blackHalfOpacity))
 
 		if err := v.okCancelBox.RenderSegmented(screen, 2, 1, 0); err != nil {
-			logger.Error(err.Error())
+			v.logger.Error(err.Error())
 			return
 		}
 
@@ -499,7 +504,7 @@ func (v *CharacterSelect) onDeleteCharButtonClicked() {
 func (v *CharacterSelect) onDeleteCharacterConfirmClicked() {
 	err := os.Remove(v.gameStates[v.selectedCharacter].FilePath)
 	if err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 	}
 
 	v.charScrollbar.SetCurrentOffset(0)
@@ -526,8 +531,9 @@ func (v *CharacterSelect) toggleDeleteCharacterDialog(showDialog bool) {
 func (v *CharacterSelect) refreshGameStates() {
 	gameStates, err := v.HeroStateFactory.GetAllHeroStates()
 	if err == nil {
-		logger.Warning(err.Error())
 		v.gameStates = gameStates
+	} else {
+		v.logger.Warning(err.Error())
 	}
 
 	v.updateCharacterBoxes()
@@ -555,7 +561,7 @@ func (v *CharacterSelect) onOkButtonClicked() {
 func (v *CharacterSelect) OnUnload() error {
 	// https://github.com/OpenDiablo2/OpenDiablo2/issues/792
 	if err := v.inputManager.UnbindHandler(v); err != nil {
-		logger.Error(err.Error())
+		v.logger.Error(err.Error())
 		return err
 	}
 
