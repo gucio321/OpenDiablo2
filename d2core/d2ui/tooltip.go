@@ -14,15 +14,18 @@ const (
 	screenHeight = 600
 )
 
+// static check that Tooltip implements widget
+var _ Widget = &Tooltip{}
+
 // Tooltip contains a label containing text with a transparent, black background
 type Tooltip struct {
-	manager         *UIManager
+	*BaseWidget
 	lines           []string
 	label           *Label
 	backgroundColor int
-	x, y            int
 	originX         tooltipXOrigin
 	originY         tooltipYOrigin
+	boxEnabled      bool
 }
 
 type tooltipXOrigin = int
@@ -55,23 +58,19 @@ func (ui *UIManager) NewTooltip(font,
 	label := ui.NewLabel(font, palette)
 	label.Alignment = d2gui.HorizontalAlignCenter
 
+	base := NewBaseWidget(ui)
+
 	res := &Tooltip{
+		BaseWidget:      base,
 		backgroundColor: blackAlpha70,
 		label:           label,
-		x:               0,
-		y:               0,
 		originX:         originX,
 		originY:         originY,
+		boxEnabled:      true,
 	}
 	res.manager = ui
 
 	return res
-}
-
-// SetPosition sets the position of the origin point of the tooltip
-func (t *Tooltip) SetPosition(x, y int) {
-	t.x = x
-	t.y = y
 }
 
 // SetTextLines sets the tooltip text in the form of an array of strings
@@ -82,6 +81,11 @@ func (t *Tooltip) SetTextLines(lines []string) {
 // SetText sets the tooltip text and splits \n into lines
 func (t *Tooltip) SetText(text string) {
 	t.lines = strings.Split(text, "\n")
+}
+
+// SetBoxEnabled determines whether a black box is drawn around the text
+func (t *Tooltip) SetBoxEnabled(enable bool) {
+	t.boxEnabled = enable
 }
 
 func (t *Tooltip) adjustCoordinatesToScreen(maxW, maxH, halfW, halfH int) (rx, ry int) {
@@ -118,7 +122,8 @@ func (t *Tooltip) adjustCoordinatesToScreen(maxW, maxH, halfW, halfH int) (rx, r
 	return renderX, renderY
 }
 
-func (t *Tooltip) getTextSize() (sx, sy int) {
+// GetSize returns the size of the tooltip
+func (t *Tooltip) GetSize() (sx, sy int) {
 	maxW, maxH := 0, 0
 
 	for i := range t.lines {
@@ -135,8 +140,8 @@ func (t *Tooltip) getTextSize() (sx, sy int) {
 }
 
 // Render draws the tooltip
-func (t *Tooltip) Render(target d2interface.Surface) {
-	maxW, maxH := t.getTextSize()
+func (t *Tooltip) Render(target d2interface.Surface) error {
+	maxW, maxH := t.GetSize()
 
 	// nolint:gomnd // no magic numbers, their meaning is obvious
 	halfW, halfH := maxW/2, maxH/2
@@ -171,7 +176,9 @@ func (t *Tooltip) Render(target d2interface.Surface) {
 	defer target.Pop()
 
 	// tooltip background
-	target.DrawRect(maxW, maxH, d2util.Color(blackAlpha70))
+	if t.boxEnabled {
+		target.DrawRect(maxW, maxH, d2util.Color(blackAlpha70))
+	}
 
 	// text
 	target.PushTranslation(halfW, 0) // text is centered, our box is not
@@ -180,9 +187,16 @@ func (t *Tooltip) Render(target d2interface.Surface) {
 	for i := range t.lines {
 		t.label.SetText(t.lines[i])
 		_, h := t.label.GetTextMetrics(t.lines[i])
-		t.label.Render(target)
+		t.label.RenderNoError(target)
 		target.PushTranslation(0, h)
 	}
 
 	target.PopN(len(t.lines))
+
+	return nil
+}
+
+// Advance is a no-op
+func (t *Tooltip) Advance(elapsed float64) error {
+	return nil
 }

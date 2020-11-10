@@ -59,12 +59,14 @@ const (
 	networkCancelBtnX, networkCancelBtnY     = 264, 540
 	tcpHostBtnX, tcpHostBtnY                 = 264, 280
 	tcpJoinBtnX, tcpJoinBtnY                 = 264, 320
+	errorLabelX, errorLabelY                 = 400, 250
 )
 
 const (
 	white       = 0xffffffff
 	lightYellow = 0xffff8cff
 	gold        = 0xd8c480ff
+	red         = 0xff0000ff
 )
 
 const (
@@ -107,6 +109,7 @@ type MainMenu struct {
 	commitLabel         *d2ui.Label
 	tcpIPOptionsLabel   *d2ui.Label
 	tcpJoinGameLabel    *d2ui.Label
+	errorLabel          *d2ui.Label
 	tcpJoinGameEntry    *d2ui.TextBox
 	screenMode          mainMenuScreenMode
 	leftButtonHeld      bool
@@ -132,6 +135,7 @@ func CreateMainMenu(
 	audioProvider d2interface.AudioProvider,
 	ui *d2ui.UIManager,
 	buildInfo BuildInfo,
+	errorMessageOptional ...string,
 ) (*MainMenu, error) {
 	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
 	if err != nil {
@@ -149,6 +153,11 @@ func CreateMainMenu(
 		buildInfo:      buildInfo,
 		uiManager:      ui,
 		heroState:      heroStateFactory,
+	}
+
+	if len(errorMessageOptional) != 0 {
+		mainMenu.errorLabel = ui.NewLabel(d2resource.FontFormal12, d2resource.PaletteUnits)
+		mainMenu.errorLabel.SetText(errorMessageOptional[0])
 	}
 
 	return mainMenu, nil
@@ -258,6 +267,12 @@ func (v *MainMenu) createLabels(loading d2screen.LoadingState) {
 	v.tcpJoinGameLabel.Color[0] = rgbaColor(gold)
 
 	v.tcpJoinGameLabel.SetPosition(joinGameX, joinGameY)
+
+	if v.errorLabel != nil {
+		v.errorLabel.SetPosition(errorLabelX, errorLabelY)
+		v.errorLabel.Alignment = d2gui.HorizontalAlignCenter
+		v.errorLabel.Color[0] = rgbaColor(red)
+	}
 }
 
 func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
@@ -308,6 +323,7 @@ func (v *MainMenu) createButtons(loading d2screen.LoadingState) {
 
 	v.cinematicsButton = v.uiManager.NewButton(d2ui.ButtonTypeShort, "CINEMATICS")
 	v.cinematicsButton.SetPosition(cineBtnX, cineBtnY)
+	v.cinematicsButton.OnActivated(func() { v.onCinematicsButtonClicked() })
 	loading.Progress(seventyPercent)
 
 	v.singlePlayerButton = v.uiManager.NewButton(d2ui.ButtonTypeWide, "SINGLE PLAYER")
@@ -406,6 +422,10 @@ func (v *MainMenu) onCreditsButtonClicked() {
 	v.navigator.ToCredits()
 }
 
+func (v *MainMenu) onCinematicsButtonClicked() {
+	v.navigator.ToCinematics()
+}
+
 // Render renders the main menu
 func (v *MainMenu) Render(screen d2interface.Surface) {
 	v.renderBackgrounds(screen)
@@ -420,6 +440,10 @@ func (v *MainMenu) renderBackgrounds(screen d2interface.Surface) {
 			return
 		}
 	case ScreenModeServerIP:
+		if err := v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
+			return
+		}
+
 		if err := v.serverIPBackground.RenderSegmented(screen, 2, 1, 0); err != nil {
 			return
 		}
@@ -437,27 +461,31 @@ func (v *MainMenu) renderBackgrounds(screen d2interface.Surface) {
 func (v *MainMenu) renderLogos(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeTrademark, ScreenModeMainMenu, ScreenModeMultiplayer:
-		v.diabloLogoLeftBack.Render(screen)
-		v.diabloLogoRightBack.Render(screen)
-		v.diabloLogoLeft.Render(screen)
-		v.diabloLogoRight.Render(screen)
+		v.diabloLogoLeftBack.RenderNoError(screen)
+		v.diabloLogoRightBack.RenderNoError(screen)
+		v.diabloLogoLeft.RenderNoError(screen)
+		v.diabloLogoRight.RenderNoError(screen)
 	}
 }
 
 func (v *MainMenu) renderLabels(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeServerIP:
-		v.tcpIPOptionsLabel.Render(screen)
-		v.tcpJoinGameLabel.Render(screen)
+		v.tcpIPOptionsLabel.RenderNoError(screen)
+		v.tcpJoinGameLabel.RenderNoError(screen)
 	case ScreenModeTCPIP:
-		v.tcpIPOptionsLabel.Render(screen)
+		v.tcpIPOptionsLabel.RenderNoError(screen)
 	case ScreenModeTrademark:
-		v.copyrightLabel.Render(screen)
-		v.copyrightLabel2.Render(screen)
+		v.copyrightLabel.RenderNoError(screen)
+		v.copyrightLabel2.RenderNoError(screen)
+
+		if v.errorLabel != nil {
+			v.errorLabel.RenderNoError(screen)
+		}
 	case ScreenModeMainMenu:
-		v.openDiabloLabel.Render(screen)
-		v.versionLabel.Render(screen)
-		v.commitLabel.Render(screen)
+		v.openDiabloLabel.RenderNoError(screen)
+		v.versionLabel.RenderNoError(screen)
+		v.commitLabel.RenderNoError(screen)
 	}
 }
 
