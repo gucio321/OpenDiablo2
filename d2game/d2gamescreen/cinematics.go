@@ -200,5 +200,4 @@ func (v *Cinematics) Render(screen d2interface.Surface) {
 	if err != nil {
 		return
 	}
-	v.cinematicsLabel.Render(screen)
 }
