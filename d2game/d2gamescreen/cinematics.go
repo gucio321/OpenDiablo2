@@ -47,7 +47,7 @@ type Cinematics struct {
 	audioProvider d2interface.AudioProvider
 }
 
-// CreateCinematics creates an instance of the credits screen
+// CreateCinematics creates an instance of the cinematics screen
 func CreateCinematics(
 	navigator d2interface.Navigator,
 	asset *d2asset.AssetManager,
@@ -65,7 +65,7 @@ func CreateCinematics(
 	return result
 }
 
-// OnLoad is called to load the resources for the credits screen
+// OnLoad is called to load the resources for the cinematics screen
 func (v *Cinematics) OnLoad(_ d2screen.LoadingState) {
 	var err error
 
@@ -181,7 +181,7 @@ func (v *Cinematics) playVideo(path string) {
 	v.videoDecoder = d2video.CreateBinkDecoder(videoBytes)
 }
 
-// Render renders the credits screen
+// Render renders the cinematics screen
 func (v *Cinematics) Render(screen d2interface.Surface) {
 	err := v.background.RenderSegmented(screen, 4, 3, 0)
 
@@ -200,4 +200,5 @@ func (v *Cinematics) Render(screen d2interface.Surface) {
 	if err != nil {
 		return
 	}
+	v.cinematicsLabel.Render(screen)
 }
