@@ -1,13 +1,30 @@
 package d2parser
 
 import (
-	"log"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation/d2lexer"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
+
+// New creates a new parser.
+func New(l d2util.LogLevel) *Parser {
+	parser := &Parser{
+		binaryOperations:  getBinaryOperations(),
+		unaryOperations:   getUnaryOperations(),
+		ternaryOperations: getTernaryOperations(),
+		fixedFunctions:    getFunctions(),
+	}
+
+	parser.logger = d2util.NewLogger()
+	parser.logger.SetLevel(l)
+	parser.logger.SetPrefix("Parser")
+
+	return parser
+}
 
 // Parser is a parser for calculations used for skill and missiles.
 type Parser struct {
@@ -20,16 +37,8 @@ type Parser struct {
 
 	currentType string
 	currentName string
-}
 
-// New creates a new parser.
-func New() *Parser {
-	return &Parser{
-		binaryOperations:  getBinaryOperations(),
-		unaryOperations:   getUnaryOperations(),
-		ternaryOperations: getTernaryOperations(),
-		fixedFunctions:    getFunctions(),
-	}
+	logger *d2util.Logger
 }
 
 // SetCurrentReference sets the current reference type and name, such as "skill" and skill name.
@@ -47,7 +56,7 @@ func (parser *Parser) Parse(calc string) d2calculation.Calculation {
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Error parsing calculation: %v", calc)
+			parser.logger.Error(fmt.Sprintf("Error parsing calculation: %v", calc))
 		}
 	}()
 

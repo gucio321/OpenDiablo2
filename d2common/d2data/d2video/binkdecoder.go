@@ -1,9 +1,10 @@
 package d2video
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
 // BinkVideoMode is the video mode type
@@ -49,6 +50,21 @@ type BinkAudioTrack struct {
 	AudioTrackID      uint32
 }
 
+// CreateBinkDecoder returns a new instance of the bink decoder
+func CreateBinkDecoder(l d2util.LogLevel, source []byte) *BinkDecoder {
+	result := &BinkDecoder{
+		streamReader: d2datautils.CreateStreamReader(source),
+	}
+
+	result.logger = d2util.NewLogger()
+	result.logger.SetLevel(l)
+	result.logger.SetPrefix("Video Decoder")
+
+	result.loadHeaderInformation()
+
+	return result
+}
+
 // BinkDecoder represents the bink decoder
 type BinkDecoder struct {
 	AudioTracks           []BinkAudioTrack
@@ -67,19 +83,10 @@ type BinkDecoder struct {
 	HasAlphaPlane         bool
 	Grayscale             bool
 
+	logger *d2util.Logger
+
 	// Mask bit 0, as this is defined as a keyframe
 
-}
-
-// CreateBinkDecoder returns a new instance of the bink decoder
-func CreateBinkDecoder(source []byte) *BinkDecoder {
-	result := &BinkDecoder{
-		streamReader: d2datautils.CreateStreamReader(source),
-	}
-
-	result.loadHeaderInformation()
-
-	return result
 }
 
 // GetNextFrame gets the next frame
@@ -90,7 +97,7 @@ func (v *BinkDecoder) GetNextFrame() {
 
 	v.streamReader.SkipBytes(int(lengthOfAudioPackets))
 
-	log.Printf("Frame %d:\tSamp: %d", v.frameIndex, samplesInPacket)
+	v.logger.Info(fmt.Sprintf("Frame %d:\tSamp: %d", v.frameIndex, samplesInPacket))
 
 	v.frameIndex++
 }
@@ -101,7 +108,7 @@ func (v *BinkDecoder) loadHeaderInformation() {
 	headerBytes := v.streamReader.ReadBytes(3)
 
 	if string(headerBytes) != "BIK" {
-		log.Fatal("Invalid header for bink video")
+		v.logger.Fatal("Invalid header for bink video") // actually shouldn't be fatal
 	}
 
 	v.videoCodecRevision = v.streamReader.GetByte()

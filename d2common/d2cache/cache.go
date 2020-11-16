@@ -2,10 +2,11 @@ package d2cache
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"sync"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
 var _ d2interface.Cache = &Cache{} // Static check to confirm struct conforms to interface
@@ -18,6 +19,20 @@ type cacheNode struct {
 	weight int
 }
 
+// CreateCache creates an  instance of a Cache
+func CreateCache(budget int, l d2util.LogLevel) d2interface.Cache {
+	cache := &Cache{
+		lookup: make(map[string]*cacheNode),
+		budget: budget,
+	}
+
+	cache.logger = d2util.NewLogger()
+	cache.logger.SetLevel(l)
+	cache.logger.SetPrefix("Cache")
+
+	return cache
+}
+
 // Cache stores arbitrary data for fast retrieval
 type Cache struct {
 	head    *cacheNode
@@ -27,11 +42,8 @@ type Cache struct {
 	budget  int
 	verbose bool
 	mutex   sync.Mutex
-}
 
-// CreateCache creates an  instance of a Cache
-func CreateCache(budget int) d2interface.Cache {
-	return &Cache{lookup: make(map[string]*cacheNode), budget: budget}
+	logger *d2util.Logger
 }
 
 // SetVerbose turns on verbose printing (warnings and stuff)
@@ -82,14 +94,14 @@ func (c *Cache) Insert(key string, value interface{}, weight int) error {
 		c.tail.prev.next = nil
 
 		if c.verbose {
-			log.Printf(
+			c.logger.Warning(fmt.Sprintf(
 				"warning -- Cache is evicting %s (%d) for %s (%d); spare weight is now %d",
 				c.tail.key,
 				c.tail.weight,
 				key,
 				weight,
 				c.budget-c.weight,
-			)
+			))
 		}
 
 		delete(c.lookup, c.tail.key)

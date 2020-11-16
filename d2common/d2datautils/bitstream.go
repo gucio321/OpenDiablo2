@@ -1,7 +1,11 @@
 package d2datautils
 
 import (
-	"log"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
+)
+
+const (
+	logPrefix = "Data Utilities"
 )
 
 const (
@@ -9,16 +13,8 @@ const (
 	bitsPerByte = 8
 )
 
-// BitStream is a utility class for reading groups of bits from a stream
-type BitStream struct {
-	data         []byte
-	dataPosition int
-	current      int
-	bitCount     int
-}
-
 // CreateBitStream creates a new BitStream
-func CreateBitStream(newData []byte) *BitStream {
+func CreateBitStream(newData []byte, l d2util.LogLevel) *BitStream {
 	result := &BitStream{
 		data:         newData,
 		dataPosition: 0,
@@ -26,13 +22,27 @@ func CreateBitStream(newData []byte) *BitStream {
 		bitCount:     0,
 	}
 
+	result.logger = d2util.NewLogger()
+	result.logger.SetLevel(l)
+	result.logger.SetPrefix(logPrefix)
+
 	return result
+}
+
+// BitStream is a utility class for reading groups of bits from a stream
+type BitStream struct {
+	data         []byte
+	dataPosition int
+	current      int
+	bitCount     int
+
+	logger *d2util.Logger
 }
 
 // ReadBits reads the specified number of bits and returns the value
 func (v *BitStream) ReadBits(bitCount int) int {
 	if bitCount > maxBits {
-		log.Panic("Maximum BitCount is 16")
+		v.logger.Info("Maximum BitCount is 16")
 	}
 
 	if !v.EnsureBits(bitCount) {

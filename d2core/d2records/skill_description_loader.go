@@ -10,7 +10,7 @@ import (
 func skillDescriptionLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 	records := make(map[string]*SkillDescriptionRecord)
 
-	parser := d2parser.New()
+	parser := d2parser.New(3) //need to be changed
 	parser.SetCurrentReference("skill", "TODO: connect skill with description!")
 
 	for d.Next() {

@@ -13,7 +13,7 @@ import (
 func skillDetailsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 	records := make(map[int]*SkillRecord)
 
-	parser := d2parser.New()
+	parser := d2parser.New(3) //need to be changed
 
 	for d.Next() {
 		name := d.String("skill")

@@ -24,10 +24,10 @@ func NewAssetManager() (*AssetManager, error) {
 		Logger:     d2util.NewLogger(),
 		Loader:     loader,
 		tables:     make([]d2tbl.TextDictionary, 0),
-		animations: d2cache.CreateCache(animationBudget),
-		fonts:      d2cache.CreateCache(fontBudget),
-		palettes:   d2cache.CreateCache(paletteBudget),
-		transforms: d2cache.CreateCache(paletteTransformBudget),
+		animations: d2cache.CreateCache(animationBudget, 3),        // need to be changed
+		fonts:      d2cache.CreateCache(fontBudget, 3),             // need to be changed
+		palettes:   d2cache.CreateCache(paletteBudget, 3),          // need to be changed
+		transforms: d2cache.CreateCache(paletteTransformBudget, 3), // need to be changed
 		Records:    records,
 	}
 

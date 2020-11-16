@@ -37,7 +37,7 @@ const (
 func NewLoader(l d2util.LogLevel) (*Loader, error) {
 	loader := &Loader{}
 
-	loader.Cache = d2cache.CreateCache(defaultCacheBudget)
+	loader.Cache = d2cache.CreateCache(defaultCacheBudget, 5) // need to be changed!!!
 	loader.Logger = d2util.NewLogger()
 
 	loader.Logger.SetPrefix(logPrefix)
