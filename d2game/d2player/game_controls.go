@@ -124,6 +124,7 @@ type GameControls struct {
 	inventory              *Inventory
 	hud                    *HUD
 	skilltree              *skillTree
+	msglog                 *MessageLog
 	heroStatsPanel         *HeroStatsPanel
 	HelpOverlay            *HelpOverlay
 	bottomMenuRect         *d2geom.Rectangle
@@ -632,6 +633,19 @@ func (g *GameControls) onCloseSkilltree() {
 	g.updateLayout()
 }
 
+func (g *GameControls) toggleMessageLog() {
+	g.inventory.Close()
+	g.skilltree.Close()
+	g.heroStatsPanel.Close()
+	g.hud.closeMinipanelTemporary()
+	g.msglog.Toggle()
+	g.updateLayout()
+}
+
+func (g *GameControls) onCloseMessageLog() {
+	g.updateLayout()
+}
+
 func (g *GameControls) openEscMenu() {
 	g.inventory.Close()
 	g.skilltree.Close()
@@ -653,6 +667,7 @@ func (g *GameControls) Load() {
 		characterToggle: g.toggleHeroStatsPanel,
 		inventoryToggle: g.toggleInventoryPanel,
 		skilltreeToggle: g.toggleSkilltreePanel,
+		messageToggle:   g.toggleMessageLog,
 		menuToggle:      g.openEscMenu,
 	}
 	g.hud.miniPanel.load(miniPanelActions)
