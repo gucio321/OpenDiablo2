@@ -2,7 +2,7 @@ package d2player
 
 import (
 	"fmt"
-	//"log"
+	"log"
 
 	//"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
@@ -13,20 +13,23 @@ import (
 )
 
 const (
-	msgCloseButtonX, msgCloseButtonY = 416, 22  //toset
 	msgLogX, msgLogY                 = 401, 222 //toset
+	msgTitleX, msgTitleY             = 100, 100 //toset
+	msgStartX, msgStartY             = 50, 120
+	msgCloseButtonX, msgCloseButtonY = 416, 22 //toset
 )
 
 type MessageLog struct {
-	asset       *d2asset.AssetManager
-	uiManager   *d2ui.UIManager
-	messages    []string
+	title       *d2ui.Label
 	closeButton *d2ui.Button
+	messages    []string
+	panel       *d2ui.Sprite
 	isOpen      bool
 	onCloseCb   func()
-	panelGroup  *d2ui.WidgetGroup
-	iconGroup   *d2ui.WidgetGroup
-	panel       *d2ui.CustomWidget
+
+	asset      *d2asset.AssetManager
+	uiManager  *d2ui.UIManager
+	panelGroup *d2ui.WidgetGroup
 }
 
 func newMessageLog(
@@ -44,21 +47,25 @@ func newMessageLog(
 }
 
 func (m *MessageLog) load() {
-	sp, err := s.uiManager.NewSprite(d2resource.BoxPieces, d2resource.PaletteSky)
+	var err error
+	frame := d2ui.NewUIFrame(m.asset, m.uiManager, d2ui.FrameLeft)
+	m.panelGroup.AddWidget(frame)
+
+	m.panel, err = m.uiManager.NewSprite(d2resource.BoxPieces, d2resource.PaletteSky)
 	if err != nil {
 		log.Print(err)
 	}
 
-	m.panel = m.uiManager.NewCustomWidget(m.Render, 400, 600)
-	m.panelGroup.AddWidget(m.panel)
+	panel := m.uiManager.NewCustomWidget(m.Render, 400, 600)
+	m.panelGroup.AddWidget(panel)
 
 	m.closeButton = m.uiManager.NewButton(d2ui.ButtonTypeSquareClose, "")
 	m.closeButton.SetVisible(false)
 	m.closeButton.OnActivated(func() { m.Close() })
 	m.panelGroup.AddWidget(m.closeButton)
 
-	m.panelGroup.SetVisible(false)
-	m.iconGroup.SetVisible(false)
+	/*m.panelGroup.SetVisible(false)
+	m.iconGroup.SetVisible(false)*/
 }
 
 // Toggle the skill tree visibility
@@ -77,7 +84,6 @@ func (m *MessageLog) Close() {
 	m.isOpen = false
 
 	m.panelGroup.SetVisible(false)
-	m.iconGroup.SetVisible(false)
 
 	m.onCloseCb()
 }
@@ -87,13 +93,12 @@ func (m *MessageLog) Open() {
 	m.isOpen = true
 
 	m.panelGroup.SetVisible(true)
-	m.iconGroup.SetVisible(true)
 }
 
 // Render the skill tree panel
 func (m *MessageLog) Render(target d2interface.Surface) {
-	m.renderTabCommon(target)
-	m.renderTab(target, m.selectedTab)
+	//m.renderTabCommon(target)
+	//m.renderTab(target, m.selectedTab)
 }
 
 /*
