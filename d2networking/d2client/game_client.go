@@ -2,7 +2,6 @@ package d2client
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2math/d2vector"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapengine"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapentity"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2records"
@@ -25,6 +25,8 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2netpacket/d2netpackettype"
 	"github.com/OpenDiablo2/OpenDiablo2/d2script"
 )
+
+const logPrefix = "Client"
 
 const (
 	numSubtilesPerTile = 5
@@ -44,11 +46,13 @@ type GameClient struct {
 	Players          map[string]*d2mapentity.Player // IDs of the other players
 	Seed             int64                          // Map seed
 	RegenMap         bool                           // Regenerate tile cache on render (map has changed)
+
+	logger *d2util.Logger
 }
 
 // Create constructs a new GameClient and returns a pointer to it.
 func Create(connectionType d2clientconnectiontype.ClientConnectionType,
-	asset *d2asset.AssetManager, scriptEngine *d2script.ScriptEngine) (*GameClient, error) {
+	asset *d2asset.AssetManager, l d2util.LogLevel, scriptEngine *d2script.ScriptEngine) (*GameClient, error) {
 	result := &GameClient{
 		asset:          asset,
 		MapEngine:      d2mapengine.CreateMapEngine(asset),
@@ -56,6 +60,10 @@ func Create(connectionType d2clientconnectiontype.ClientConnectionType,
 		connectionType: connectionType,
 		scriptEngine:   scriptEngine,
 	}
+
+	result.logger = d2util.NewLogger()
+	result.logger.SetPrefix(logPrefix)
+	result.logger.SetLevel(l)
 
 	// for a remote client connection, set loading to true - wait until we process the GenerateMapPacket
 	// before we start updating map entites
@@ -70,7 +78,7 @@ func Create(connectionType d2clientconnectiontype.ClientConnectionType,
 
 	switch connectionType {
 	case d2clientconnectiontype.LANClient:
-		result.clientConnection, err = d2remoteclient.Create(asset)
+		result.clientConnection, err = d2remoteclient.Create(d2util.LogLevelDefault, asset)
 	case d2clientconnectiontype.LANServer:
 		result.clientConnection, err = d2localclient.Create(asset, true)
 	case d2clientconnectiontype.Local:
@@ -147,20 +155,20 @@ func (g *GameClient) OnPacketReceived(packet d2netpacket.NetPacket) error {
 		}
 	case d2netpackettype.Ping:
 		if err := g.handlePingPacket(); err != nil {
-			log.Printf("GameClient: error responding to server ping: %s", err)
+			g.logger.Error(fmt.Sprintf("error responding to server ping: %s", err))
 		}
 	case d2netpackettype.PlayerDisconnectionNotification:
 		// Not implemented
-		log.Printf("RemoteClientConnection: received disconnect: %s", packet.PacketData)
+		g.logger.Error(fmt.Sprintf("RemoteClientConnection: received disconnect: %s", packet.PacketData))
 	case d2netpackettype.ServerClosed:
 		// https://github.com/OpenDiablo2/OpenDiablo2/issues/802
-		log.Print("Server has been closed")
+		g.logger.Info("Server has been closed")
 		os.Exit(0)
 	case d2netpackettype.ServerFull:
-		log.Println("Server is full")
+		g.logger.Info("Server is full")
 		os.Exit(0)
 	default:
-		log.Fatalf("Invalid packet type: %d", packet.PacketType)
+		g.logger.Fatal(fmt.Sprintf("Invalid packet type: %d", packet.PacketType))
 	}
 
 	return nil
@@ -196,7 +204,7 @@ func (g *GameClient) handleUpdateServerInfoPacket(packet d2netpacket.NetPacket) 
 	g.MapEngine.SetSeed(serverInfo.Seed)
 	g.PlayerID = serverInfo.PlayerID
 	g.Seed = serverInfo.Seed
-	log.Printf("Player id set to %s", serverInfo.PlayerID)
+	g.logger.Info(fmt.Sprintf("Player id set to %s", serverInfo.PlayerID))
 
 	return nil
 }
@@ -259,7 +267,7 @@ func (g *GameClient) handleMovePlayerPacket(packet d2netpacket.NetPacket) error 
 
 			if err != nil {
 				fmtStr := "GameClient: error setting animation mode for player %s: %s"
-				log.Printf(fmtStr, player.ID(), err)
+				g.logger.Error(fmt.Sprintf(fmtStr, player.ID(), err))
 			}
 		})
 	}

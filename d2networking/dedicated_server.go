@@ -7,6 +7,10 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2server"
 )
 
+const (
+	logPrefix = "Networking"
+)
+
 // ServerEventFlag represents a server event
 type ServerEventFlag = int
 
