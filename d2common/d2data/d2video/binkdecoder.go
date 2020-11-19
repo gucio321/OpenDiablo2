@@ -51,13 +51,13 @@ type BinkAudioTrack struct {
 }
 
 // CreateBinkDecoder returns a new instance of the bink decoder
-func CreateBinkDecoder(l d2util.LogLevel, source []byte) *BinkDecoder {
+func CreateBinkDecoder(source []byte) *BinkDecoder {
 	result := &BinkDecoder{
 		streamReader: d2datautils.CreateStreamReader(source),
 	}
 
 	result.logger = d2util.NewLogger()
-	result.logger.SetLevel(l)
+	result.logger.SetLevel(d2util.LogLevelDefault) // for now
 	result.logger.SetPrefix("Video Decoder")
 
 	result.loadHeaderInformation()

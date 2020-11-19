@@ -4,10 +4,12 @@ import (
 	"math"
 	"math/rand"
 	"testing"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
 func TestEmptyInput(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -29,7 +31,7 @@ func TestEmptyInput(t *testing.T) {
 }
 
 func TestConstantExpression(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -54,7 +56,7 @@ func TestConstantExpression(t *testing.T) {
 }
 
 func TestUnaryOperations(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -84,7 +86,7 @@ func TestUnaryOperations(t *testing.T) {
 }
 
 func TestArithmeticBinaryOperations(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -114,7 +116,7 @@ func TestArithmeticBinaryOperations(t *testing.T) {
 }
 
 func TestParentheses(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -139,7 +141,7 @@ func TestParentheses(t *testing.T) {
 }
 
 func TestLackFinalParethesis(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -160,7 +162,7 @@ func TestLackFinalParethesis(t *testing.T) {
 }
 
 func TestLogicalBinaryOperations(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -192,7 +194,7 @@ func TestLogicalBinaryOperations(t *testing.T) {
 }
 
 func TestLogicalAndArithmetic(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -216,7 +218,7 @@ func TestLogicalAndArithmetic(t *testing.T) {
 }
 
 func TestTernaryOperator(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -242,7 +244,7 @@ func TestTernaryOperator(t *testing.T) {
 }
 
 func TestBuiltinFunctions(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 
 	table := []struct {
 		expr   string
@@ -265,7 +267,7 @@ func TestBuiltinFunctions(t *testing.T) {
 }
 
 func TestRandFunction(t *testing.T) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 	c := parser.Parse("rand(1,5)")
 
 	rand.Seed(1)
@@ -286,7 +288,7 @@ func TestRandFunction(t *testing.T) {
 }
 
 func BenchmarkSimpleExpression(b *testing.B) {
-	parser := New()
+	parser := New(d2util.LogLevelDefault)
 	expr := "(1 < 10)*(5 > 3) ? 43 == 0 ? 65 : 32 : 5 == 5 ? 1 : 2"
 
 	for n := 0; n < b.N; n++ {

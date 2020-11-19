@@ -31,9 +31,11 @@ package d2compression
 //
 
 import (
-	"log"
+	"errors"
+	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
 // linkedNode is a node which is both hierachcical (parent/child) and doubly linked (next/prev)
@@ -199,13 +201,13 @@ func getPrimes() [][]byte {
 	}
 }
 
-func decode(input *d2datautils.BitStream, head *linkedNode) *linkedNode {
+func decode(input *d2datautils.BitStream, head *linkedNode) (*linkedNode, error) {
 	node := head
 
 	for node.child0 != nil {
 		bit := input.ReadBits(1)
 		if bit == -1 {
-			log.Fatal("unexpected end of file")
+			return nil, fmt.Errorf("unexpected end of file")
 		}
 
 		if bit == 0 {
@@ -216,7 +218,7 @@ func decode(input *d2datautils.BitStream, head *linkedNode) *linkedNode {
 		node = node.getChild1()
 	}
 
-	return node
+	return node, nil
 }
 
 const (
@@ -265,7 +267,7 @@ func insertNode(tail *linkedNode, decomp int) *linkedNode {
 
 // This increases the weight of the new node and its antecendants
 // and adjusts the tree if needed
-func adjustTree(newNode *linkedNode) {
+func adjustTree(newNode *linkedNode) error {
 	current := newNode
 
 	for current != nil {
@@ -322,7 +324,7 @@ func adjustTree(newNode *linkedNode) {
 
 		// insert current after prev
 		if prev == nil {
-			log.Fatal("previous frame not defined!")
+			return errors.New("previous frame not defined!")
 		}
 
 		temp := prev.next
@@ -348,6 +350,8 @@ func adjustTree(newNode *linkedNode) {
 
 		current = current.parent
 	}
+
+	return nil
 }
 
 func buildTree(tail *linkedNode) *linkedNode {
@@ -375,25 +379,29 @@ func buildTree(tail *linkedNode) *linkedNode {
 
 // HuffmanDecompress decompresses huffman-compressed data
 //nolint:gomnd // binary decode magic
-func HuffmanDecompress(data []byte) []byte {
+func HuffmanDecompress(data []byte) ([]byte, error) {
 	comptype := data[0]
 	primes := getPrimes()
 
 	if comptype == 0 {
-		log.Panic("compression type 0 is not currently supported")
+		return nil, errors.New("compression type 0 is not currently supported")
 	}
 
 	tail := buildList(primes[comptype])
 	head := buildTree(tail)
 
 	outputstream := d2datautils.CreateStreamWriter()
-	bitstream := d2datautils.CreateBitStream(data[1:])
+	bitstream := d2datautils.CreateBitStream(data[1:], d2util.LogLevelDefault) // need to be changed
 
 	var decoded int
 
 Loop:
 	for {
-		node := decode(bitstream, head)
+		node, err := decode(bitstream, head)
+		if err != nil {
+			return nil, err
+		}
+
 		decoded = node.decompressedValue
 		switch decoded {
 		case 256:
@@ -408,5 +416,5 @@ Loop:
 		}
 	}
 
-	return outputstream.GetBytes()
+	return outputstream.GetBytes(), nil
 }

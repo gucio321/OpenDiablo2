@@ -2,11 +2,13 @@ package d2datautils
 
 import (
 	"testing"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
 func TestBitStreamBits(t *testing.T) {
 	data := []byte{0xAA}
-	bitStream := CreateBitStream(data)
+	bitStream := CreateBitStream(d2util.LogLevelDefault, data)
 	shouldBeOne := 0
 
 	for i := 0; i < 8; i++ {

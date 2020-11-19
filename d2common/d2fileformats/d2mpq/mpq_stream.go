@@ -262,7 +262,11 @@ func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
 		// sparse then bzip2
 		panic("sparse decompression + bzip2 decompression not supported")
 	case 0x41:
-		sinput := d2compression.HuffmanDecompress(data[1:])
+		sinput, err := d2compression.HuffmanDecompress(data[1:])
+		if err != nil {
+			log.Println(err)
+		}
+
 		sinput = d2compression.WavDecompress(sinput, 1)
 		tmp := make([]byte, len(sinput))
 
@@ -274,7 +278,11 @@ func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 1);
 		panic("pk + mpqwav decompression not supported")
 	case 0x81:
-		sinput := d2compression.HuffmanDecompress(data[1:])
+		sinput, err := d2compression.HuffmanDecompress(data[1:])
+		if err != nil {
+			log.Println(err)
+		}
+
 		sinput = d2compression.WavDecompress(sinput, 2)
 		tmp := make([]byte, len(sinput))
 		copy(tmp, sinput)
