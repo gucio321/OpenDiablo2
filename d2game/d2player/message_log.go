@@ -72,7 +72,7 @@ func (m *MessageLog) load() {
 func (m *MessageLog) Toggle() {
 	fmt.Println("MessageLog Toggled")
 
-	if m.isOpen {
+	if m.IsOpen() {
 		m.Close()
 	} else {
 		m.Open()
@@ -99,6 +99,10 @@ func (m *MessageLog) Open() {
 func (m *MessageLog) Render(target d2interface.Surface) {
 	//m.renderTabCommon(target)
 	//m.renderTab(target, m.selectedTab)
+}
+
+func (s *MessageLog) IsOpen() bool {
+	return s.isOpen
 }
 
 /*
@@ -280,9 +284,6 @@ func (s *skillTree) setHeroTypeResourcePath() {
 
 
 
-func (s *skillTree) IsOpen() bool {
-	return s.isOpen
-}
 
 // Set the callback run on closing the skilltree
 func (s *skillTree) SetOnCloseCb(cb func()) {
