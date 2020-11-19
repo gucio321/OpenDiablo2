@@ -124,7 +124,7 @@ type GameControls struct {
 	inventory              *Inventory
 	hud                    *HUD
 	skilltree              *skillTree
-	msglog                 *MessageLog
+	messageLog             *MessageLog
 	heroStatsPanel         *HeroStatsPanel
 	HelpOverlay            *HelpOverlay
 	bottomMenuRect         *d2geom.Rectangle
@@ -253,6 +253,9 @@ func NewGameControls(
 	inventory := NewInventory(asset, ui, inventoryRecord)
 	skilltree := newSkillTree(hero.Skills, hero.Class, asset, ui)
 
+	messages := []string{"elo", "something"}
+	messageLog := newMessageLog(messages, asset, ui)
+
 	miniPanel := newMiniPanel(asset, ui, isSinglePlayer)
 
 	heroState, err := d2hero.NewHeroStateFactory(asset)
@@ -279,6 +282,7 @@ func NewGameControls(
 		mapRenderer:    mapRenderer,
 		inventory:      inventory,
 		skilltree:      skilltree,
+		messageLog:     messageLog,
 		heroStatsPanel: heroStatsPanel,
 		HelpOverlay:    helpOverlay,
 		keyMap:         keyMap,
@@ -634,11 +638,11 @@ func (g *GameControls) onCloseSkilltree() {
 }
 
 func (g *GameControls) toggleMessageLog() {
-	g.inventory.Close()
+	/*g.inventory.Close()
 	g.skilltree.Close()
 	g.heroStatsPanel.Close()
-	g.hud.closeMinipanelTemporary()
-	g.msglog.Toggle()
+	g.hud.closeMinipanelTemporary()*/
+	g.messageLog.Toggle()
 	g.updateLayout()
 }
 
@@ -664,11 +668,11 @@ func (g *GameControls) Load() {
 	g.HelpOverlay.Load()
 
 	miniPanelActions := &miniPanelActions{
-		characterToggle: g.toggleHeroStatsPanel,
-		inventoryToggle: g.toggleInventoryPanel,
-		skilltreeToggle: g.toggleSkilltreePanel,
-		messageToggle:   g.toggleMessageLog,
-		menuToggle:      g.openEscMenu,
+		characterToggle:  g.toggleHeroStatsPanel,
+		inventoryToggle:  g.toggleInventoryPanel,
+		skilltreeToggle:  g.toggleSkilltreePanel,
+		messageLogToggle: g.toggleMessageLog,
+		menuToggle:       g.openEscMenu,
 	}
 	g.hud.miniPanel.load(miniPanelActions)
 }

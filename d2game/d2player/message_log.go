@@ -41,6 +41,7 @@ func newMessageLog(
 		messages:  messages,
 		asset:     asset,
 		uiManager: ui,
+		isOpen:    false,
 	}
 
 	return ml
@@ -64,19 +65,29 @@ func (m *MessageLog) load() {
 	m.closeButton.OnActivated(func() { m.Close() })
 	m.panelGroup.AddWidget(m.closeButton)
 
-	/*m.panelGroup.SetVisible(false)
-	m.iconGroup.SetVisible(false)*/
+	m.panelGroup.SetVisible(false)
+}
+
+func (s *MessageLog) IsOpen() bool {
+	return s.isOpen
 }
 
 // Toggle the skill tree visibility
 func (m *MessageLog) Toggle() {
 	fmt.Println("MessageLog Toggled")
 
-	if m.IsOpen() {
+	if m.isOpen == true {
 		m.Close()
 	} else {
 		m.Open()
 	}
+}
+
+// Open the skill tree
+func (m *MessageLog) Open() {
+	m.isOpen = true
+
+	m.panelGroup.SetVisible(true)
 }
 
 // Close the skill tree
@@ -88,11 +99,45 @@ func (m *MessageLog) Close() {
 	m.onCloseCb()
 }
 
-// Open the skill tree
-func (m *MessageLog) Open() {
-	m.isOpen = true
+// Set the callback run on closing the skilltree
+func (s *MessageLog) SetOnCloseCb(cb func()) {
+	s.onCloseCb = cb
+}
 
-	m.panelGroup.SetVisible(true)
+func (m *MessageLog) Advance() {
+	if !m.isOpen {
+		return
+	}
+}
+
+func (m *MessageLog) renderStaticMenu(target d2interface.Surface) {
+	m.renderStaticPanelFrames(target)
+}
+
+func (m *MessageLog) renderStaticPanelFrames(target d2interface.Surface) {
+	frames := []int{
+		msgLogX,
+		msgLogY,
+	}
+	for _, frameIndex := range frames {
+		if err := m.panel.SetCurrentFrame(frameIndex); err != nil {
+			log.Printf("%e", err)
+		}
+		w, h := m.panel.GetCurrentFrameSize()
+		switch frameIndex {
+		case statsPanelTopLeft:
+			m.panel.SetPosition(msgLogX, msgLogY+h)
+			msgLogX += w
+		case statsPanelTopRight:
+			m.panel.SetPosition(msgLogX, msgLogY+h)
+			msgLogY += h
+		case statsPanelBottomRight:
+			m.panel.SetPosition(msgLogX, msgLogY+h)
+		case statsPanelBottomLeft:
+			m.panel.SetPosition(msgLogX-w, msgLogY+h)
+		}
+		m.panel.Render(target)
+	}
 }
 
 // Render the skill tree panel
@@ -101,8 +146,15 @@ func (m *MessageLog) Render(target d2interface.Surface) {
 	//m.renderTab(target, m.selectedTab)
 }
 
-func (s *MessageLog) IsOpen() bool {
-	return s.isOpen
+func (s *MessageLog) renderPanelSegment(
+	target d2interface.Surface,
+	frame int) {
+	if err := s.resources.skillPanel.SetCurrentFrame(frame); err != nil {
+		log.Printf("%e", err)
+		return
+	}
+
+	s.resources.skillPanel.Render(target)
 }
 
 /*
@@ -285,10 +337,6 @@ func (s *skillTree) setHeroTypeResourcePath() {
 
 
 
-// Set the callback run on closing the skilltree
-func (s *skillTree) SetOnCloseCb(cb func()) {
-	s.onCloseCb = cb
-}
 
 func (s *skillTree) setTab(tab int) {
 	s.selectedTab = tab
@@ -299,16 +347,6 @@ func (s *skillTree) setTab(tab int) {
 	}
 }
 
-func (s *skillTree) renderPanelSegment(
-	target d2interface.Surface,
-	frame int) {
-	if err := s.resources.skillPanel.SetCurrentFrame(frame); err != nil {
-		log.Printf("%e", err)
-		return
-	}
-
-	s.resources.skillPanel.Render(target)
-}
 
 func (s *skillTree) renderTabCommon(target d2interface.Surface) {
 	skillPanel := s.resources.skillPanel

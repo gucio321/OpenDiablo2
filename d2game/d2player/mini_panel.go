@@ -31,14 +31,14 @@ type miniPanelContent struct {
 }
 
 type miniPanelActions struct {
-	characterToggle func()
-	inventoryToggle func()
-	skilltreeToggle func()
-	partyToggle     func()
-	automapToggle   func()
-	messageToggle   func()
-	questToggle     func()
-	menuToggle      func()
+	characterToggle  func()
+	inventoryToggle  func()
+	skilltreeToggle  func()
+	partyToggle      func()
+	automapToggle    func()
+	messageLogToggle func()
+	questToggle      func()
+	menuToggle       func()
 }
 
 type miniPanel struct {
@@ -152,8 +152,8 @@ func (m *miniPanel) createWidgets(actions *miniPanelActions) {
 			m.asset.TranslateString("minipanelautomap"),
 		},
 		{d2ui.ButtonTypeMinipanelMessage,
-			actions.messageToggle,
-			m.asset.TranslateString("minipanelmessage"),
+			actions.messageLogToggle,
+			m.asset.TranslateString("minipanelchar"),
 		},
 		{d2ui.ButtonTypeMinipanelQuest,
 			actions.questToggle,
