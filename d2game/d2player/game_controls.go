@@ -210,6 +210,7 @@ func NewGameControls(
 
 	heroStatsPanel := NewHeroStatsPanel(asset, ui, hero.Name(), hero.Class, l, hero.Stats)
 	inventory := NewInventory(asset, ui, l, hero.Gold, inventoryRecord)
+	moveGold := NewMoveGoldPanel(asset, ui, l)
 	skilltree := newSkillTree(hero.Skills, hero.Class, asset, l, ui)
 
 	miniPanel := newMiniPanel(asset, ui, l, isSinglePlayer)
@@ -237,6 +238,7 @@ func NewGameControls(
 		inputListener:  inputListener,
 		mapRenderer:    mapRenderer,
 		inventory:      inventory,
+		moveGold:       moveGold,
 		skilltree:      skilltree,
 		heroStatsPanel: heroStatsPanel,
 		HelpOverlay:    helpOverlay,
@@ -298,6 +300,7 @@ type GameControls struct {
 	escapeMenu             *EscapeMenu
 	ui                     *d2ui.UIManager
 	inventory              *Inventory
+	moveGold               *MoveGoldPanel
 	hud                    *HUD
 	skilltree              *skillTree
 	heroStatsPanel         *HeroStatsPanel
