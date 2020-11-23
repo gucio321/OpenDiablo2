@@ -110,7 +110,7 @@ func (s *MoveGoldPanel) Load() {
 	s.moveGoldActionLabel.SetPosition(moveGoldActionLabelX, moveGoldActionLabelY)
 	s.panelGroup.AddWidget(s.moveGoldActionLabel)
 
-	s.panelGroup.SetVisible(true)
+	s.panelGroup.SetVisible(false)
 }
 
 // IsOpen returns true if the hero status panel is open

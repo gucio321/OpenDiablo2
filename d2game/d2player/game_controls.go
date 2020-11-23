@@ -626,7 +626,8 @@ func (g *GameControls) onCloseHeroStatsPanel() {
 
 func (g *GameControls) toggleInventoryPanel() {
 	g.skilltree.Close()
-	g.inventory.Toggle()
+	g.moveGold.Toggle()
+	//g.inventory.Toggle()
 	g.hud.miniPanel.SetMovedLeft(g.inventory.IsOpen())
 	g.updateLayout()
 }
