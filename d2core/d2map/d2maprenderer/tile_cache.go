@@ -102,7 +102,10 @@ func (mr *MapRenderer) generateFloorCache(tile *d2ds1.FloorShadowRecord) {
 
 		indexData := make([]byte, tileData[i].Width*tileHeight)
 		d2dt1.DecodeTileGfxData(tileData[i].Blocks, &indexData, tileYOffset, tileData[i].Width)
-		pixels := d2util.ImgIndexToRGBA(indexData, mr.palette)
+		pixels, err := d2util.ImgIndexToRGBA(indexData, mr.palette)
+		if err != nil {
+			mr.Errorf("ImgIndexToRGBA error: %v", err)
+		}
 
 		image.ReplacePixels(pixels)
 
@@ -146,7 +149,11 @@ func (mr *MapRenderer) generateShadowCache(tile *d2ds1.FloorShadowRecord) {
 
 	indexData := make([]byte, tileData.Width*int32(tileHeight))
 	d2dt1.DecodeTileGfxData(tileData.Blocks, &indexData, tileYOffset, tileData.Width)
-	pixels := d2util.ImgIndexToRGBA(indexData, mr.palette)
+
+	pixels, err := d2util.ImgIndexToRGBA(indexData, mr.palette)
+	if err != nil {
+		mr.Errorf("ImgIndexToRGBA error: %v", err)
+	}
 
 	image.ReplacePixels(pixels)
 
@@ -217,7 +224,10 @@ func (mr *MapRenderer) generateWallCache(tile *d2ds1.WallRecord) {
 		d2dt1.DecodeTileGfxData(newTileData.Blocks, &indexData, tileYOffset, tileSurfaceWidth)
 	}
 
-	pixels := d2util.ImgIndexToRGBA(indexData, mr.palette)
+	pixels, err := d2util.ImgIndexToRGBA(indexData, mr.palette)
+	if err != nil {
+		mr.Errorf("ImgIndexToRGBA error: %v", err)
+	}
 
 	image.ReplacePixels(pixels)
 

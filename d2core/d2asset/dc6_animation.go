@@ -2,6 +2,7 @@ package d2asset
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
@@ -168,7 +169,10 @@ func (a *DC6Animation) createFrameSurface(directionIndex, frameIndex int) (d2int
 	startFrame := directionIndex * int(a.dc6.FramesPerDirection)
 	dc6Frame := a.dc6.Frames[startFrame+frameIndex]
 	indexData := a.dc6.DecodeFrame(startFrame + frameIndex)
-	colorData := d2util.ImgIndexToRGBA(indexData, a.palette)
+	colorData, err := d2util.ImgIndexToRGBA(indexData, a.palette)
+	if err != nil {
+		return nil, fmt.Errorf("ImgIndexToRGBA error: %v", err)
+	}
 
 	if a.renderer == nil {
 		return nil, errors.New("no renderer")

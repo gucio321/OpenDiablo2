@@ -1,14 +1,12 @@
 package d2util
 
 import (
-	"log"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 )
 
 // ImgIndexToRGBA converts the given indices byte slice and palette into
 // a byte slice of RGBA values
-func ImgIndexToRGBA(indexData []byte, palette d2interface.Palette) []byte {
+func ImgIndexToRGBA(indexData []byte, palette d2interface.Palette) ([]byte, error) {
 	bytesPerPixel := 4
 	colorData := make([]byte, len(indexData)*bytesPerPixel)
 
@@ -20,7 +18,7 @@ func ImgIndexToRGBA(indexData []byte, palette d2interface.Palette) []byte {
 
 		c, err := palette.GetColor(int(indexData[i]))
 		if err != nil {
-			log.Print(err)
+			return nil, err
 		}
 
 		colorData[i*bytesPerPixel] = c.R()
@@ -29,5 +27,5 @@ func ImgIndexToRGBA(indexData []byte, palette d2interface.Palette) []byte {
 		colorData[i*bytesPerPixel+3] = c.A()
 	}
 
-	return colorData
+	return colorData, nil
 }

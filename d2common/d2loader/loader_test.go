@@ -2,7 +2,6 @@ package d2loader
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
@@ -91,25 +90,25 @@ func TestLoader_Load(t *testing.T) {
 	commonSource, err := loader.AddSource(sourcePathB)
 	if err != nil {
 		t.Fail()
-		log.Print(err)
+		t.Error(err)
 	}
 
 	_, err = loader.AddSource(sourcePathD)
 	if err != nil {
 		t.Fail()
-		log.Print(err)
+		t.Error(err)
 	}
 
 	_, err = loader.AddSource(sourcePathA)
 	if err != nil {
 		t.Fail()
-		log.Print(err)
+		t.Error(err)
 	}
 
 	_, err = loader.AddSource(sourcePathC)
 	if err != nil {
 		t.Fail()
-		log.Print(err)
+		t.Error(err)
 	}
 
 	entryCommon, errCommon := loader.Load(commonFile) // common file exists in all three Sources
