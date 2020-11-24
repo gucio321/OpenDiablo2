@@ -50,6 +50,7 @@ const (
 	ButtonTypeRightArrow         ButtonType = 30
 	ButtonTypeQuery              ButtonType = 31
 	ButtonTypeSquelchChat        ButtonType = 32
+	ButtonTypeAddSkill           ButtonType = 33
 
 	ButtonNoFixedWidth  int = -1
 	ButtonNoFixedHeight int = -1
@@ -180,6 +181,10 @@ const (
 	buttonGoldCoinSegmentsX     = 1
 	buttonGoldCoinSegmentsY     = 1
 	buttonGoldCoinDisabledFrame = -1
+
+	buttonAddSkillSegmentsX     = 1
+	buttonAddSkillSegmentsY     = 1
+	buttonAddSkillDisabledFrame = -1
 
 	pressedButtonOffset = 2
 )
@@ -492,6 +497,21 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			Tooltip:          buttonTooltipSquelchChat,
 			TooltipXOffset:   buttonBuySellTooltipXOffset,
 			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeAddSkill: {
+			XSegments:        buttonAddSkillSegmentsX,
+			YSegments:        buttonAddSkillSegmentsY,
+			DisabledFrame:    buttonAddSkillDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.AddSkillButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
 		},
 		ButtonTypeSkillTreeTab: {
 			XSegments:        buttonSkillTreeTabXSegments,
