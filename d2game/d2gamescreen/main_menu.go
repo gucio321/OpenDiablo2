@@ -37,16 +37,16 @@ type mainMenuScreenMode int
 )*/
 
 const (
-	Trademark                   = 0
-	SubMenuMainMenu             = 1
-	SinglePlayerCharacterSelect = 2
-	SinglePlayerSelectHeroClass = 3
-	MultiplayerMenu             = 4
-	MultiplayerTCPIP            = 5
-	MultiplayerServerIP         = 6
-	SubMenuMapEngineTest        = 7
-	SubMenuCredits              = 8
-	CinematicsMenu              = 9
+	trademark = iota
+	subMenuMainMenu
+	singlePlayerCharacterSelect
+	singlePlayerSelectHeroClass
+	multiplayerMenu
+	multiplayerTCPIP
+	multiplayerServerIP
+	subMenuMapEngineTest
+	subMenuCredits
+	cinematicsMenu
 )
 
 // mainMenuScreenMode types
@@ -407,17 +407,17 @@ func (v *MainMenu) createMultiplayerMenuButtons() {
 }
 
 func (v *MainMenu) onMapTestClicked() {
-	v.SetSubMenuMode(SubMenuMapEngineTest)
+	v.SetSubMenuMode(subMenuMapEngineTest)
 	v.navigator.ToMapEngineTest(0, 1)
 }
 
 func (v *MainMenu) onSinglePlayerClicked() {
 	if v.heroState.HasGameStates() {
 		// Go here only if existing characters are available to select
-		v.SetSubMenuMode(SinglePlayerCharacterSelect)
+		v.SetSubMenuMode(singlePlayerCharacterSelect)
 		v.navigator.ToCharacterSelect(d2clientconnectiontype.Local, v.tcpJoinGameEntry.GetText())
 	} else {
-		v.SetSubMenuMode(SinglePlayerSelectHeroClass)
+		v.SetSubMenuMode(singlePlayerSelectHeroClass)
 		v.navigator.ToSelectHero(d2clientconnectiontype.Local, v.tcpJoinGameEntry.GetText())
 	}
 }
@@ -448,12 +448,12 @@ func (v *MainMenu) onExitButtonClicked() {
 }
 
 func (v *MainMenu) onCreditsButtonClicked() {
-	v.SetSubMenuMode(SubMenuCredits)
+	v.SetSubMenuMode(subMenuCredits)
 	v.navigator.ToCredits()
 }
 
 func (v *MainMenu) onCinematicsButtonClicked() {
-	v.SetSubMenuMode(CinematicsMenu)
+	v.SetSubMenuMode(cinematicsMenu)
 	v.navigator.ToCinematics()
 }
 
@@ -547,7 +547,7 @@ func (v *MainMenu) Advance(tickTime float64) error {
 // OnMouseButtonDown is called when a mouse button is clicked
 func (v *MainMenu) OnMouseButtonDown(event d2interface.MouseEvent) bool {
 	if v.screenMode == ScreenModeTrademark && event.Button() == d2enum.MouseButtonLeft {
-		v.SetSubMenuMode(SubMenuMainMenu)
+		v.SetSubMenuMode(subMenuMainMenu)
 		v.SetScreenMode(ScreenModeMainMenu)
 		return true
 	}
@@ -567,42 +567,7 @@ func (v *MainMenu) OnKeyUp(event d2interface.KeyEvent) bool {
 	fmt.Println("\n\nOn Key Up called\ninput submenu value is: ", v.SubMenu)
 	preventKeyEventPropagation := false
 
-	/*	switch v.SubMenu {
-		case Trademark: // escape in trademar, does nothing
-			switch event.Key() {
-			case d2enum.KeyEscape, d2enum.KeyEnter, d2enum.KeySpace:
-				v.SetSubMenuMode(SubMenuMainMenu)
-				v.SetScreenMode(ScreenModeMainMenu)
-			}
-			preventKeyEventPropagation = true
-		case SubMenuMainMenu: // for "main" main menu screen pressing escape closes game
-			if v.onEscapePressed(event) {
-				v.onExitButtonClicked()
-			}
-		case MultiplayerMenu, SubMenuCredits, CinematicsMenu, SinglePlayerCharacterSelect, SubMenuMapEngineTest: // escape puts from credits, cinematics select menu or single player character select menu onto main menu (trademark)
-			if v.onEscapePressed(event) {
-				v.navigator.ToMainMenu()
-				v.SetSubMenuMode(Trademark)
-			}
-		case SinglePlayerSelectHeroClass: // escape in select hero class menu puts onto character select menu
-			if v.onEscapePressed(event) {
-				v.navigator.ToCharacterSelect(d2clientconnectiontype.Local, v.tcpJoinGameEntry.GetText())
-				v.SetSubMenuMode(Trademark)
-			}
-			preventKeyEventPropagation = true
-		case MultiplayerTCPIP: // back to previous menu
-			if v.onEscapePressed(event) {
-				v.onTCPIPCancelClicked()
-			}
-			preventKeyEventPropagation = true
-		case MultiplayerServerIP:
-			if v.onEscapePressed(event) {
-				v.onBtnTCPIPCancelClicked()
-			}
-			preventKeyEventPropagation = true
-		}*/
-
-	switch v.SubMenu {
+	/*switch v.SubMenu {
 	case Trademark: // escape in trademar, does nothing
 		switch event.Key() {
 		case d2enum.KeyEscape, d2enum.KeyEnter, d2enum.KeySpace:
@@ -612,7 +577,6 @@ func (v *MainMenu) OnKeyUp(event d2interface.KeyEvent) bool {
 		preventKeyEventPropagation = true
 	case SubMenuMainMenu: // for "main" main menu screen pressing escape closes game
 		if v.onEscapePressed(event) {
-			fmt.Println("\n\nEscape button pressed in main menu\nSubMenu is: ", v.SubMenu, " = 1")
 			v.onExitButtonClicked()
 		}
 	case MultiplayerMenu, SubMenuCredits, CinematicsMenu, SinglePlayerCharacterSelect, SubMenuMapEngineTest: // escape puts from credits, cinematics select menu or single player character select menu onto main menu (trademark)
@@ -632,6 +596,42 @@ func (v *MainMenu) OnKeyUp(event d2interface.KeyEvent) bool {
 		}
 		preventKeyEventPropagation = true
 	case MultiplayerServerIP:
+		if v.onEscapePressed(event) {
+			v.onBtnTCPIPCancelClicked()
+		}
+		preventKeyEventPropagation = true
+	}*/
+
+	switch v.SubMenu {
+	case trademark: // escape in trademar, does nothing
+		switch event.Key() {
+		case d2enum.KeyEscape, d2enum.KeyEnter, d2enum.KeySpace:
+			v.SetSubMenuMode(subMenuMainMenu)
+			v.SetScreenMode(ScreenModeMainMenu)
+		}
+		preventKeyEventPropagation = true
+	case subMenuMainMenu: // for "main" main menu screen pressing escape closes game
+		if v.onEscapePressed(event) {
+			fmt.Println("\n\nEscape button pressed in main menu\nSubMenu is: ", v.SubMenu, " = 1")
+			v.onExitButtonClicked()
+		}
+	case multiplayerMenu, subMenuCredits, cinematicsMenu, singlePlayerCharacterSelect, subMenuMapEngineTest: // escape puts from credits, cinematics select menu or single player character select menu onto main menu (trademark)
+		if v.onEscapePressed(event) {
+			v.navigator.ToMainMenu()
+			v.SetSubMenuMode(trademark)
+		}
+	case singlePlayerSelectHeroClass: // escape in select hero class menu puts onto character select menu
+		if v.onEscapePressed(event) {
+			v.navigator.ToCharacterSelect(d2clientconnectiontype.Local, v.tcpJoinGameEntry.GetText())
+			v.SetSubMenuMode(trademark)
+		}
+		preventKeyEventPropagation = true
+	case multiplayerTCPIP: // back to previous menu
+		if v.onEscapePressed(event) {
+			v.onTCPIPCancelClicked()
+		}
+		preventKeyEventPropagation = true
+	case multiplayerServerIP:
 		if v.onEscapePressed(event) {
 			v.onBtnTCPIPCancelClicked()
 		}
@@ -672,42 +672,42 @@ func (v *MainMenu) SetScreenMode(screenMode mainMenuScreenMode) {
 }
 
 func (v *MainMenu) onNetworkCancelClicked() {
-	v.SetSubMenuMode(Trademark)
+	v.SetSubMenuMode(trademark)
 	v.SetScreenMode(ScreenModeMainMenu)
 }
 
 func (v *MainMenu) onMultiplayerClicked() {
-	v.SetSubMenuMode(MultiplayerMenu)
+	v.SetSubMenuMode(multiplayerMenu)
 	v.SetScreenMode(ScreenModeMultiplayer)
 }
 
 func (v *MainMenu) onNetworkTCPIPClicked() {
-	v.SetSubMenuMode(MultiplayerTCPIP)
+	v.SetSubMenuMode(multiplayerTCPIP)
 	v.SetScreenMode(ScreenModeTCPIP)
 }
 
 func (v *MainMenu) onTCPIPCancelClicked() {
-	v.SetSubMenuMode(MultiplayerMenu)
+	v.SetSubMenuMode(multiplayerMenu)
 	v.SetScreenMode(ScreenModeMultiplayer)
 }
 
 func (v *MainMenu) onTCPIPHostGameClicked() {
-	v.SetSubMenuMode(SinglePlayerCharacterSelect)
+	v.SetSubMenuMode(singlePlayerCharacterSelect)
 	v.navigator.ToCharacterSelect(d2clientconnectiontype.LANServer, "")
 }
 
 func (v *MainMenu) onTCPIPJoinGameClicked() {
-	v.SetSubMenuMode(MultiplayerServerIP)
+	v.SetSubMenuMode(multiplayerServerIP)
 	v.SetScreenMode(ScreenModeServerIP)
 }
 
 func (v *MainMenu) onBtnTCPIPCancelClicked() {
-	v.SetSubMenuMode(MultiplayerTCPIP)
+	v.SetSubMenuMode(multiplayerTCPIP)
 	v.SetScreenMode(ScreenModeTCPIP)
 }
 
 func (v *MainMenu) onBtnTCPIPOkClicked() {
-	v.SetSubMenuMode(SinglePlayerCharacterSelect)
+	v.SetSubMenuMode(singlePlayerCharacterSelect)
 	v.navigator.ToCharacterSelect(d2clientconnectiontype.LANClient, v.tcpJoinGameEntry.GetText())
 }
 
