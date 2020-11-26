@@ -55,7 +55,6 @@ type CharacterSelect struct {
 	audioProvider d2interface.AudioProvider
 	renderer      d2interface.Renderer
 	navigator     d2interface.Navigator
-	mainMenu      *MainMenu
 }
 
 // CreateCharacterSelect creates the character select screen and returns a pointer to it
