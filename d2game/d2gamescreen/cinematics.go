@@ -1,13 +1,11 @@
 package d2gamescreen
 
 import (
-	"log"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2data/d2video"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2screen"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
@@ -24,6 +22,29 @@ const (
 	endCreditExpBtnX, endCreditExpBtnY     = 264, 430
 	cinematicsExitBtnX, cinematicsExitBtnY = 340, 470
 )
+
+// CreateCinematics creates an instance of the credits screen
+func CreateCinematics(
+	navigator d2interface.Navigator,
+	asset *d2asset.AssetManager,
+	renderer d2interface.Renderer,
+	aup d2interface.AudioProvider,
+	l d2util.LogLevel,
+	ui *d2ui.UIManager) *Cinematics {
+	cinematics := &Cinematics{
+		asset:         asset,
+		renderer:      renderer,
+		navigator:     navigator,
+		uiManager:     ui,
+		audioProvider: aup,
+	}
+
+	cinematics.Logger = d2util.NewLogger()
+	cinematics.Logger.SetPrefix(logPrefix)
+	cinematics.Logger.SetLevel(l)
+
+	return cinematics
+}
 
 // Cinematics represents the cinematics screen
 type Cinematics struct {
@@ -45,24 +66,8 @@ type Cinematics struct {
 	uiManager     *d2ui.UIManager
 	videoDecoder  *d2video.BinkDecoder
 	audioProvider d2interface.AudioProvider
-}
 
-// CreateCinematics creates an instance of the credits screen
-func CreateCinematics(
-	navigator d2interface.Navigator,
-	asset *d2asset.AssetManager,
-	renderer d2interface.Renderer,
-	aup d2interface.AudioProvider,
-	ui *d2ui.UIManager) *Cinematics {
-	result := &Cinematics{
-		asset:         asset,
-		renderer:      renderer,
-		navigator:     navigator,
-		uiManager:     ui,
-		audioProvider: aup,
-	}
-
-	return result
+	*d2util.Logger
 }
 
 // OnLoad is called to load the resources for the credits screen
@@ -74,7 +79,7 @@ func (v *Cinematics) OnLoad(_ d2screen.LoadingState) {
 	v.background, err = v.uiManager.NewSprite(d2resource.GameSelectScreen, d2resource.PaletteSky)
 
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.background.SetPosition(backgroundX, backgroundY)
@@ -82,7 +87,7 @@ func (v *Cinematics) OnLoad(_ d2screen.LoadingState) {
 	v.cinematicsBackground, err = v.uiManager.NewSprite(d2resource.CinematicsBackground, d2resource.PaletteSky)
 
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.cinematicsBackground.SetPosition(cinematicsX, cinematicsY)
@@ -90,51 +95,42 @@ func (v *Cinematics) OnLoad(_ d2screen.LoadingState) {
 	v.createButtons()
 
 	v.cinematicsLabel = v.uiManager.NewLabel(d2resource.Font30, d2resource.PaletteStatic)
-	v.cinematicsLabel.Alignment = d2gui.HorizontalAlignCenter
+	v.cinematicsLabel.Alignment = d2ui.HorizontalAlignCenter
 	v.cinematicsLabel.SetText("SELECT CINEMATIC")
 	v.cinematicsLabel.Color[0] = rgbaColor(lightBrown)
 	v.cinematicsLabel.SetPosition(cinematicsLabelX, cinematicsLabelY)
 }
 
 func (v *Cinematics) createButtons() {
-	/*CINEMATICS NAMES:
-	Act 1: The Sister's Lament
-	Act 2: Dessert Journay
-	Act 3: Mephisto's Jungle
-	Act 4: Enter Hell
-	Act 5: Search For Ball
-	end Credit Classic: Terror's End
-	end Credit Expansion: Destruction's End
-	*/
-	v.cinematicsExitBtn = v.uiManager.NewButton(d2ui.ButtonTypeMedium, "CANCEL")
+	v.cinematicsExitBtn = v.uiManager.NewButton(d2ui.ButtonTypeMedium, v.asset.TranslateString("cancel"))
 	v.cinematicsExitBtn.SetPosition(cinematicsExitBtnX, cinematicsExitBtnY)
 	v.cinematicsExitBtn.OnActivated(func() { v.onCinematicsExitBtnClicked() })
 
-	v.a1Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "THE SISTER'S LAMENT")
+	v.a1Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("act1X"))
 	v.a1Btn.SetPosition(a1BtnX, a1BtnY)
 	v.a1Btn.OnActivated(func() { v.onA1BtnClicked() })
 
-	v.a2Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "DESSERT JOURNAY")
+	v.a2Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("act2X"))
 	v.a2Btn.SetPosition(a2BtnX, a2BtnY)
 	v.a2Btn.OnActivated(func() { v.onA2BtnClicked() })
 
-	v.a3Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "MEPHISTO'S JUNGLE")
+	v.a3Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("act3X"))
 	v.a3Btn.SetPosition(a3BtnX, a3BtnY)
 	v.a3Btn.OnActivated(func() { v.onA3BtnClicked() })
 
-	v.a4Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "ENTER HELL")
+	v.a4Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("act4X"))
 	v.a4Btn.SetPosition(a4BtnX, a4BtnY)
 	v.a4Btn.OnActivated(func() { v.onA4BtnClicked() })
 
-	v.endCreditClassBtn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "TERROR'S END")
+	v.endCreditClassBtn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("strepilogueX"))
 	v.endCreditClassBtn.SetPosition(endCreditClassBtnX, endCreditClassBtnY)
 	v.endCreditClassBtn.OnActivated(func() { v.onEndCreditClassBtnClicked() })
 
-	v.a5Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "SEARCH FOR BAAL")
+	v.a5Btn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("act5X"))
 	v.a5Btn.SetPosition(a5BtnX, a5BtnY)
 	v.a5Btn.OnActivated(func() { v.onA5BtnClicked() })
 
-	v.endCreditExpBtn = v.uiManager.NewButton(d2ui.ButtonTypeWide, "DESTRUCTION'S END")
+	v.endCreditExpBtn = v.uiManager.NewButton(d2ui.ButtonTypeWide, v.asset.TranslateString("strlastcinematic"))
 	v.endCreditExpBtn.SetPosition(endCreditExpBtnX, endCreditExpBtnY)
 	v.endCreditExpBtn.OnActivated(func() { v.onEndCreditExpBtnClicked() })
 }
@@ -174,7 +170,7 @@ func (v *Cinematics) onEndCreditExpBtnClicked() {
 func (v *Cinematics) playVideo(path string) {
 	videoBytes, err := v.asset.LoadFile(path)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 		return
 	}
 
@@ -183,21 +179,7 @@ func (v *Cinematics) playVideo(path string) {
 
 // Render renders the credits screen
 func (v *Cinematics) Render(screen d2interface.Surface) {
-	err := v.background.RenderSegmented(screen, 4, 3, 0)
-
-	if err != nil {
-		return
-	}
-
-	err = v.cinematicsBackground.RenderSegmented(screen, 2, 2, 0)
-
-	if err != nil {
-		return
-	}
-
-	err = v.cinematicsLabel.Render(screen)
-
-	if err != nil {
-		return
-	}
+	v.background.RenderSegmented(screen, 4, 3, 0)
+	v.cinematicsBackground.RenderSegmented(screen, 2, 2, 0)
+	v.cinematicsLabel.Render(screen)
 }

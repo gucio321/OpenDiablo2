@@ -1,14 +1,14 @@
 package d2player
 
 import (
+	"errors"
 	"fmt"
-	"log"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
@@ -84,6 +84,35 @@ type skillTreeHeroTypeResources struct {
 	skillPanelPath string
 }
 
+func newSkillTree(
+	skills map[int]*d2hero.HeroSkill,
+	heroClass d2enum.Hero,
+	asset *d2asset.AssetManager,
+	l d2util.LogLevel,
+	ui *d2ui.UIManager,
+) *skillTree {
+	st := &skillTree{
+		skills:    skills,
+		heroClass: heroClass,
+		asset:     asset,
+		uiManager: ui,
+		originX:   skillTreePanelX,
+		originY:   skillTreePanelY,
+		tab: [numTabs]*skillTreeTab{
+			{},
+			{},
+			{},
+		},
+		l: l,
+	}
+
+	st.Logger = d2util.NewLogger()
+	st.Logger.SetLevel(l)
+	st.Logger.SetPrefix(logPrefix)
+
+	return st
+}
+
 type skillTree struct {
 	resources    *skillTreeHeroTypeResources
 	asset        *d2asset.AssetManager
@@ -103,36 +132,16 @@ type skillTree struct {
 	panelGroup   *d2ui.WidgetGroup
 	iconGroup    *d2ui.WidgetGroup
 	panel        *d2ui.CustomWidget
-}
 
-func newSkillTree(
-	skills map[int]*d2hero.HeroSkill,
-	heroClass d2enum.Hero,
-	asset *d2asset.AssetManager,
-	ui *d2ui.UIManager,
-) *skillTree {
-	st := &skillTree{
-		skills:    skills,
-		heroClass: heroClass,
-		asset:     asset,
-		uiManager: ui,
-		originX:   skillTreePanelX,
-		originY:   skillTreePanelY,
-		tab: [numTabs]*skillTreeTab{
-			{},
-			{},
-			{},
-		},
-	}
-
-	return st
+	*d2util.Logger
+	l d2util.LogLevel
 }
 
 func (s *skillTree) load() {
 	s.panelGroup = s.uiManager.NewWidgetGroup(d2ui.RenderPrioritySkilltree)
 	s.iconGroup = s.uiManager.NewWidgetGroup(d2ui.RenderPrioritySkilltreeIcon)
 
-	s.panel = s.uiManager.NewCustomWidget(s.Render)
+	s.panel = s.uiManager.NewCustomWidget(s.Render, 400, 600)
 	s.panelGroup.AddWidget(s.panel)
 
 	s.frame = d2ui.NewUIFrame(s.asset, s.uiManager, d2ui.FrameRight)
@@ -143,11 +152,14 @@ func (s *skillTree) load() {
 	s.closeButton.OnActivated(func() { s.Close() })
 	s.panelGroup.AddWidget(s.closeButton)
 
-	s.setHeroTypeResourcePath()
+	if err := s.setHeroTypeResourcePath(); err != nil {
+		s.Error(err.Error())
+	}
+
 	s.loadForHeroType()
 
 	for _, skill := range s.skills {
-		si := newSkillIcon(s.uiManager, s.resources.skillSprite, skill)
+		si := newSkillIcon(s.uiManager, s.resources.skillSprite, s.l, skill)
 		s.skillIcons = append(s.skillIcons, si)
 		s.iconGroup.AddWidget(si)
 	}
@@ -160,14 +172,14 @@ func (s *skillTree) load() {
 func (s *skillTree) loadForHeroType() {
 	sp, err := s.uiManager.NewSprite(s.resources.skillPanelPath, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		s.Error(err.Error())
 	}
 
 	s.resources.skillPanel = sp
 
 	si, err := s.uiManager.NewSprite(s.resources.skillIconPath, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		s.Error(err.Error())
 	}
 
 	s.resources.skillSprite = si
@@ -186,7 +198,7 @@ func (s *skillTree) loadForHeroType() {
 
 	s.availSPLabel = s.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteSky)
 	s.availSPLabel.SetPosition(availSPLabelX, availSPLabelY)
-	s.availSPLabel.Alignment = d2gui.HorizontalAlignCenter
+	s.availSPLabel.Alignment = d2ui.HorizontalAlignCenter
 	s.availSPLabel.SetText(s.makeTabString("StrSklTree1", "StrSklTree2", "StrSklTree3"))
 	s.panelGroup.AddWidget(s.availSPLabel)
 }
@@ -316,10 +328,11 @@ func (s *skillTree) getTab(class d2enum.Hero) *heroTabData {
 	return tabMap[class]
 }
 
-func (s *skillTree) setHeroTypeResourcePath() {
+func (s *skillTree) setHeroTypeResourcePath() error {
 	entry := s.getTab(s.heroClass)
+
 	if entry == nil {
-		log.Fatal("Unknown Hero Type")
+		return errors.New("unknown hero type")
 	}
 
 	s.resources = entry.resources
@@ -330,11 +343,13 @@ func (s *skillTree) setHeroTypeResourcePath() {
 	for i := 0; i < numTabs; i++ {
 		s.tab[i].closeButtonPosX = entry.closeButtonPos[i]
 	}
+
+	return nil
 }
 
 // Toggle the skill tree visibility
 func (s *skillTree) Toggle() {
-	fmt.Println("SkillTree toggled")
+	s.Info("SkillTree toggled")
 
 	if s.isOpen {
 		s.Close()
@@ -358,6 +373,7 @@ func (s *skillTree) Open() {
 	s.isOpen = true
 
 	s.panelGroup.SetVisible(true)
+	s.iconGroup.SetVisible(true)
 
 	// we only want to enable the icons of our current tab again
 	s.setTab(s.selectedTab)
@@ -383,71 +399,51 @@ func (s *skillTree) setTab(tab int) {
 
 func (s *skillTree) renderPanelSegment(
 	target d2interface.Surface,
-	frame int) error {
+	frame int) {
 	if err := s.resources.skillPanel.SetCurrentFrame(frame); err != nil {
-		return err
+		s.Error(err.Error())
+		return
 	}
 
-	s.resources.skillPanel.RenderNoError(target)
-
-	return nil
+	s.resources.skillPanel.Render(target)
 }
 
-func (s *skillTree) renderTabCommon(target d2interface.Surface) error {
+func (s *skillTree) renderTabCommon(target d2interface.Surface) {
 	skillPanel := s.resources.skillPanel
 	x, y := s.originX, s.originY
 
 	// top
 	w, h, err := skillPanel.GetFrameSize(frameCommonTabTopLeft)
 	if err != nil {
-		return err
+		s.Error(err.Error())
+		return
 	}
 
 	y += h
 
 	skillPanel.SetPosition(x, y)
-
-	err = s.renderPanelSegment(target, frameCommonTabTopLeft)
-	if err != nil {
-		return err
-	}
+	s.renderPanelSegment(target, frameCommonTabTopLeft)
 
 	skillPanel.SetPosition(x+w, y)
-
-	err = s.renderPanelSegment(target, frameCommonTabTopRight)
-	if err != nil {
-		return err
-	}
+	s.renderPanelSegment(target, frameCommonTabTopRight)
 
 	// bottom
 	_, h, err = skillPanel.GetFrameSize(frameCommonTabBottomLeft)
 	if err != nil {
-		return err
+		s.Error(err.Error())
+		return
 	}
 
 	y += h
 
 	skillPanel.SetPosition(x, y)
-
-	err = s.renderPanelSegment(target, frameCommonTabBottomLeft)
-	if err != nil {
-		return err
-	}
+	s.renderPanelSegment(target, frameCommonTabBottomLeft)
 
 	skillPanel.SetPosition(x+w, y)
-
-	err = s.renderPanelSegment(target, frameCommonTabBottomRight)
-	if err != nil {
-		return err
-	}
-
-	// available skill points label
-	s.availSPLabel.RenderNoError(target)
-
-	return nil
+	s.renderPanelSegment(target, frameCommonTabBottomRight)
 }
 
-func (s *skillTree) renderTab(target d2interface.Surface, tab int) error {
+func (s *skillTree) renderTab(target d2interface.Surface, tab int) {
 	topFrame := frameOffsetTop + (tabIndexOffset * tab)
 	bottomFrame := frameOffsetBottom + (tabIndexOffset * tab)
 
@@ -457,71 +453,46 @@ func (s *skillTree) renderTab(target d2interface.Surface, tab int) error {
 	// top
 	_, h0, err := skillPanel.GetFrameSize(topFrame)
 	if err != nil {
-		return err
+		s.Error(err.Error())
+		return
 	}
 
 	y += h0
 
 	skillPanel.SetPosition(x, y)
-
-	err = s.renderPanelSegment(target, topFrame)
-	if err != nil {
-		return err
-	}
+	s.renderPanelSegment(target, topFrame)
 
 	// bottom
 	w, h1, err := skillPanel.GetFrameSize(bottomFrame)
 	if err != nil {
-		return err
+		s.Error(err.Error())
+		return
 	}
 
 	skillPanel.SetPosition(x, y+h1)
 
-	if err := s.renderPanelSegment(target, bottomFrame); err != nil {
-		return err
-	}
+	s.renderPanelSegment(target, bottomFrame)
 
 	// tab button highlighted
 	switch tab {
 	case firstTab:
 		skillPanel.SetPosition(x+w, y+h1)
-
-		if err := s.renderPanelSegment(target, frameSelectedTab1Full); err != nil {
-			return err
-		}
+		s.renderPanelSegment(target, frameSelectedTab1Full)
 	case secondTab:
 		x += w
 		skillPanel.SetPosition(x, s.originY+h0)
-
-		if err := s.renderPanelSegment(target, frameSelectedTab2Top); err != nil {
-			return err
-		}
+		s.renderPanelSegment(target, frameSelectedTab2Top)
 
 		skillPanel.SetPosition(x, y+h1)
-
-		if err := s.renderPanelSegment(target, frameSelectedTab2Bottom); err != nil {
-			return err
-		}
+		s.renderPanelSegment(target, frameSelectedTab2Bottom)
 	case thirdTab:
 		skillPanel.SetPosition(x+w, y)
-
-		if err := s.renderPanelSegment(target, frameSelectedTab3Full); err != nil {
-			return err
-		}
+		s.renderPanelSegment(target, frameSelectedTab3Full)
 	}
-
-	return nil
 }
 
 // Render the skill tree panel
-func (s *skillTree) Render(target d2interface.Surface) error {
-	if err := s.renderTabCommon(target); err != nil {
-		return err
-	}
-
-	if err := s.renderTab(target, s.selectedTab); err != nil {
-		return err
-	}
-
-	return nil
+func (s *skillTree) Render(target d2interface.Surface) {
+	s.renderTabCommon(target)
+	s.renderTab(target, s.selectedTab)
 }

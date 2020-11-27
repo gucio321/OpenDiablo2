@@ -1,15 +1,15 @@
 package d2player
 
 import (
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
+	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
 type (
@@ -61,6 +61,42 @@ const (
 	singleFrame = time.Millisecond * 16
 )
 
+// NewEscapeMenu creates a new escape menu
+func NewEscapeMenu(navigator d2interface.Navigator,
+	renderer d2interface.Renderer,
+	audioProvider d2interface.AudioProvider,
+	uiManager *d2ui.UIManager,
+	guiManager *d2gui.GuiManager,
+	assetManager *d2asset.AssetManager,
+	l d2util.LogLevel,
+	keyMap *KeyMap,
+) *EscapeMenu {
+	m := &EscapeMenu{
+		audioProvider: audioProvider,
+		renderer:      renderer,
+		navigator:     navigator,
+		guiManager:    guiManager,
+		assetManager:  assetManager,
+		keyMap:        keyMap,
+	}
+
+	keyBindingMenu := NewKeyBindingMenu(assetManager, renderer, uiManager, guiManager, keyMap, l, m)
+	m.keyBindingMenu = keyBindingMenu
+
+	m.layouts = make(map[layoutID]*layout)
+	m.layouts[mainLayoutID] = m.newMainLayout()
+	m.layouts[optionsLayoutID] = m.newOptionsLayout()
+	m.layouts[soundOptionsLayoutID] = m.newSoundOptionsLayout()
+	m.layouts[videoOptionsLayoutID] = m.newVideoOptionsLayout()
+	m.layouts[automapOptionsLayoutID] = m.newAutomapOptionsLayout()
+
+	m.Logger = d2util.NewLogger()
+	m.Logger.SetLevel(l)
+	m.Logger.SetPrefix(logPrefix)
+
+	return m
+}
+
 // EscapeMenu represents the in-game menu that shows up when the esc key is pressed
 type EscapeMenu struct {
 	isOpen        bool
@@ -70,22 +106,29 @@ type EscapeMenu struct {
 	// leftPent and rightPent are generated once and shared between the layouts
 	leftPent  *d2gui.AnimatedSprite
 	rightPent *d2gui.AnimatedSprite
-	layouts   []*layout
+	layouts   map[layoutID]*layout
 
-	renderer      d2interface.Renderer
-	audioProvider d2interface.AudioProvider
-	navigator     d2interface.Navigator
-	guiManager    *d2gui.GuiManager
-	assetManager  *d2asset.AssetManager
+	renderer       d2interface.Renderer
+	audioProvider  d2interface.AudioProvider
+	navigator      d2interface.Navigator
+	guiManager     *d2gui.GuiManager
+	assetManager   *d2asset.AssetManager
+	keyMap         *KeyMap
+	keyBindingMenu *KeyBindingMenu
+
+	onCloseCb func()
+
+	*d2util.Logger
 }
 
 type layout struct {
 	*d2gui.Layout
 	leftPent           *d2gui.AnimatedSprite
 	rightPent          *d2gui.AnimatedSprite
+	actionableElements []actionableElement
 	currentEl          int
 	rendered           bool
-	actionableElements []actionableElement
+	isRaw              bool
 }
 
 func (l *layout) Trigger() {
@@ -110,6 +153,7 @@ type enumLabel struct {
 	current           int
 	playSound         func()
 	updateValue       func(optID optionID, value string)
+	*EscapeMenu
 }
 
 func (l *enumLabel) Trigger() {
@@ -119,7 +163,7 @@ func (l *enumLabel) Trigger() {
 
 	currentValue := l.values[l.current]
 	if err := l.textChangingLabel.SetText(currentValue); err != nil {
-		fmt.Printf("could not change the label text to: %s\n", currentValue)
+		l.EscapeMenu.Errorf("could not change the label text to: %s", currentValue)
 	}
 
 	l.updateValue(l.optionID, currentValue)
@@ -128,33 +172,6 @@ func (l *enumLabel) Trigger() {
 type actionableElement interface {
 	GetOffset() (int, int)
 	Trigger()
-}
-
-// NewEscapeMenu creates a new escape menu
-func NewEscapeMenu(navigator d2interface.Navigator,
-	renderer d2interface.Renderer,
-	audioProvider d2interface.AudioProvider,
-	guiManager *d2gui.GuiManager,
-	assetManager *d2asset.AssetManager,
-) *EscapeMenu {
-	m := &EscapeMenu{
-		audioProvider: audioProvider,
-		renderer:      renderer,
-		navigator:     navigator,
-		guiManager:    guiManager,
-		assetManager:  assetManager,
-	}
-
-	m.layouts = []*layout{
-		mainLayoutID:              m.newMainLayout(),
-		optionsLayoutID:           m.newOptionsLayout(),
-		soundOptionsLayoutID:      m.newSoundOptionsLayout(),
-		videoOptionsLayoutID:      m.newVideoOptionsLayout(),
-		automapOptionsLayoutID:    m.newAutomapOptionsLayout(),
-		configureControlsLayoutID: m.newConfigureControlsLayout(),
-	}
-
-	return m
 }
 
 func (m *EscapeMenu) newMainLayout() *layout {
@@ -213,11 +230,11 @@ func (m *EscapeMenu) newAutomapOptionsLayout() *layout {
 	})
 }
 
-func (m *EscapeMenu) newConfigureControlsLayout() *layout {
-	return m.wrapLayout(func(l *layout) {
-		m.addTitle(l, "CONFIGURE CONTROLS")
-		m.addPreviousMenuLabel(l)
-	})
+func (m *EscapeMenu) newConfigureControlsLayout(keyBindingMenu *KeyBindingMenu) *layout {
+	return &layout{
+		Layout: keyBindingMenu.GetLayout(),
+		isRaw:  true,
+	}
 }
 
 func (m *EscapeMenu) wrapLayout(fn func(*layout)) *layout {
@@ -233,7 +250,7 @@ func (m *EscapeMenu) wrapLayout(fn func(*layout)) *layout {
 	leftPent, err := left.AddAnimatedSprite(d2resource.PentSpin, d2resource.PaletteUnits, d2gui.DirectionBackward)
 
 	if err != nil {
-		log.Print(err)
+		m.Error(err.Error())
 		return nil
 	}
 
@@ -253,7 +270,7 @@ func (m *EscapeMenu) wrapLayout(fn func(*layout)) *layout {
 	rightPent, err := right.AddAnimatedSprite(d2resource.PentSpin, d2resource.PaletteUnits, d2gui.DirectionForward)
 
 	if err != nil {
-		log.Print(err)
+		m.Error(err.Error())
 		return nil
 	}
 
@@ -272,7 +289,7 @@ func (m *EscapeMenu) wrapLayout(fn func(*layout)) *layout {
 func (m *EscapeMenu) addTitle(l *layout, text string) {
 	_, err := l.AddLabel(text, d2gui.FontStyle42Units)
 	if err != nil {
-		fmt.Printf("could not add label: %s to the escape menu\n", text)
+		m.Errorf("could not add label: %s to the escape menu", text)
 	}
 
 	l.AddSpacerStatic(spacerWidth, labelGutter)
@@ -281,7 +298,7 @@ func (m *EscapeMenu) addTitle(l *layout, text string) {
 func (m *EscapeMenu) addBigSelectionLabel(l *layout, text string, targetLayout layoutID) {
 	guiLabel, err := l.AddLabel(text, d2gui.FontStyle42Units)
 	if err != nil {
-		log.Print(err)
+		m.Error(err.Error())
 	}
 
 	label := &showLayoutLabel{Label: guiLabel, target: targetLayout, showLayout: m.showLayout}
@@ -304,7 +321,7 @@ func (m *EscapeMenu) addPreviousMenuLabel(l *layout) {
 
 	guiLabel, err := l.AddLabel("PREVIOUS MENU", d2gui.FontStyle30Units)
 	if err != nil {
-		log.Print(err)
+		m.Error(err.Error())
 	}
 
 	label := &showLayoutLabel{Label: guiLabel, target: optionsLayoutID, showLayout: m.showLayout}
@@ -328,7 +345,7 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 
 	_, err := layout.AddLabel(text, d2gui.FontStyle30Units)
 	if err != nil {
-		fmt.Printf("could not add label: %s to the escape menu\n", text)
+		m.Errorf("could not add label: %s to the escape menu", text)
 	}
 
 	elID := len(l.actionableElements)
@@ -341,7 +358,7 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 
 	guiLabel, err := layout.AddLabel(values[0], d2gui.FontStyle30Units)
 	if err != nil {
-		log.Print(err)
+		m.Error(err.Error())
 	}
 
 	label := &enumLabel{
@@ -366,9 +383,16 @@ func (m *EscapeMenu) addEnumLabel(l *layout, optID optionID, text string, values
 func (m *EscapeMenu) OnLoad() {
 	var err error
 
+	err = m.keyBindingMenu.Load()
+	if err != nil {
+		m.Errorf("unable to load the configure controls window: %v", err.Error())
+	}
+
+	m.layouts[configureControlsLayoutID] = m.newConfigureControlsLayout(m.keyBindingMenu)
+
 	m.selectSound, err = m.audioProvider.LoadSound(d2resource.SFXCursorSelect, false, false)
 	if err != nil {
-		log.Print(err)
+		m.Error(err.Error())
 	}
 }
 
@@ -384,16 +408,27 @@ func (m *EscapeMenu) OnEscKey() {
 		automapOptionsLayoutID,
 		configureControlsLayoutID:
 		m.setLayout(optionsLayoutID)
+
+		if err := m.keyBindingMenu.Close(); err != nil {
+			m.Errorf("unable to close the configure controls menu: %v", err.Error())
+		}
+
 		return
 	}
 
 	m.close()
 }
 
+// SetOnCloseCb sets the callback that is run when close() is called
+func (m *EscapeMenu) SetOnCloseCb(cb func()) {
+	m.onCloseCb = cb
+}
+
 func (m *EscapeMenu) close() {
 	m.isOpen = false
 
 	m.guiManager.SetLayout(nil)
+	m.onCloseCb()
 }
 
 func (m *EscapeMenu) open() {
@@ -419,6 +454,12 @@ func (m *EscapeMenu) showLayout(id layoutID) {
 	}
 
 	m.setLayout(id)
+
+	if id == configureControlsLayoutID {
+		m.keyBindingMenu.Open()
+	} else if err := m.keyBindingMenu.Close(); err != nil {
+		m.Errorf("unable to close the configure controls menu: %v", err.Error())
+	}
 }
 
 func (m *EscapeMenu) onHoverElement(id int) {
@@ -433,10 +474,20 @@ func (m *EscapeMenu) onHoverElement(id int) {
 }
 
 func (m *EscapeMenu) onUpdateValue(optID optionID, value string) {
-	fmt.Printf("updating value %d with %s\n", optID, value)
+	m.Infof("updating value %d with %s", optID, value)
 }
 
 func (m *EscapeMenu) setLayout(id layoutID) {
+	layout := m.layouts[id]
+
+	if layout.isRaw {
+		m.guiManager.SetLayout(layout.Layout)
+		m.layouts[id].rendered = true
+		m.currentLayout = id
+
+		return
+	}
+
 	m.leftPent = m.layouts[id].leftPent
 	m.rightPent = m.layouts[id].rightPent
 	m.currentLayout = id
@@ -500,8 +551,79 @@ func (m *EscapeMenu) IsOpen() bool {
 	return m.isOpen
 }
 
+// Advance computes the state of the elements of the menu overtime
+func (m *EscapeMenu) Advance(elapsed float64) error {
+	if m.keyBindingMenu != nil {
+		if err := m.keyBindingMenu.Advance(elapsed); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Render will render the escape menu on the target surface
+func (m *EscapeMenu) Render(target d2interface.Surface) error {
+	if m.isOpen {
+		if err := m.keyBindingMenu.Render(target); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// OnMouseButtonDown triggers whnever a mous button is pressed
+func (m *EscapeMenu) OnMouseButtonDown(event d2interface.MouseEvent) bool {
+	if !m.isOpen {
+		return false
+	}
+
+	if m.currentLayout == configureControlsLayoutID {
+		if err := m.keyBindingMenu.onMouseButtonDown(event); err != nil {
+			m.Errorf("unable to handle mouse down on configure controls menu: %v", err.Error())
+		}
+	}
+
+	return false
+}
+
+// OnMouseButtonUp triggers whenever a mouse button is released
+func (m *EscapeMenu) OnMouseButtonUp(event d2interface.MouseEvent) bool {
+	if !m.isOpen {
+		return false
+	}
+
+	if m.currentLayout == configureControlsLayoutID {
+		m.keyBindingMenu.onMouseButtonUp()
+	}
+
+	return false
+}
+
+// OnMouseMove triggers whenever the mouse moves within the renderer
+func (m *EscapeMenu) OnMouseMove(event d2interface.MouseMoveEvent) bool {
+	if !m.isOpen {
+		return false
+	}
+
+	if m.currentLayout == configureControlsLayoutID {
+		m.keyBindingMenu.onMouseMove(event)
+	}
+
+	return false
+}
+
 // OnKeyDown defines the actions of the Escape Menu when a key is pressed
 func (m *EscapeMenu) OnKeyDown(event d2interface.KeyEvent) bool {
+	if m.keyBindingMenu.IsOpen() {
+		if err := m.keyBindingMenu.OnKeyDown(event); err != nil {
+			m.Errorf("unable to handle key down on configure controls menu: %v", err.Error())
+		}
+
+		return false
+	}
+
 	switch event.Key() {
 	case d2enum.KeyUp:
 		m.onUpKey()

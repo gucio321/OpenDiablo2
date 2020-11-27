@@ -3,14 +3,13 @@ package d2player
 import (
 	"fmt"
 	"image/color"
-	"log"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
@@ -69,7 +68,7 @@ const (
 	// the close button for the help panel
 	closeButtonX      = 685
 	closeButtonY      = 25
-	closeButtonLabelX = 680
+	closeButtonLabelX = 702
 	closeButtonLabelY = 60
 
 	// the rest of these are for text with a line and dot, towards the bottom of the screen
@@ -156,43 +155,46 @@ const (
 	beltDotY   = 568
 )
 
-// HelpOverlay represents the in-game overlay that toggles visibility when the h key is pressed
-type HelpOverlay struct {
-	asset       *d2asset.AssetManager
-	isOpen      bool
-	renderer    d2interface.Renderer
-	frames      []*d2ui.Sprite
-	text        []*d2ui.Label
-	lines       []line
-	uiManager   *d2ui.UIManager
-	layout      *d2gui.Layout
-	closeButton *d2ui.Button
-	guiManager  *d2gui.GuiManager
-	keyMap      *KeyMap
-}
-
 // NewHelpOverlay creates a new HelpOverlay instance
 func NewHelpOverlay(
 	asset *d2asset.AssetManager,
-	renderer d2interface.Renderer,
 	ui *d2ui.UIManager,
-	guiManager *d2gui.GuiManager,
+	l d2util.LogLevel,
 	keyMap *KeyMap,
 ) *HelpOverlay {
 	h := &HelpOverlay{
-		asset:      asset,
-		renderer:   renderer,
-		uiManager:  ui,
-		guiManager: guiManager,
-		keyMap:     keyMap,
+		asset:     asset,
+		uiManager: ui,
+		keyMap:    keyMap,
 	}
+
+	h.Logger = d2util.NewLogger()
+	h.Logger.SetLevel(l)
+	h.Logger.SetPrefix(logPrefix)
 
 	return h
 }
 
+// HelpOverlay represents the in-game overlay that toggles visibility when the h key is pressed
+type HelpOverlay struct {
+	asset            *d2asset.AssetManager
+	isOpen           bool
+	frames           []*d2ui.Sprite
+	text             []*d2ui.Label
+	lines            []line
+	uiManager        *d2ui.UIManager
+	closeButton      *d2ui.Button
+	keyMap           *KeyMap
+	onCloseCb        func()
+	panelGroup       *d2ui.WidgetGroup
+	backgroundWidget *d2ui.CustomWidget
+
+	*d2util.Logger
+}
+
 // Toggle the visibility state of the overlay
 func (h *HelpOverlay) Toggle() {
-	fmt.Print("Help overlay toggled\n")
+	h.Info("Help overlay toggled")
 
 	if h.isOpen {
 		h.Close()
@@ -204,20 +206,18 @@ func (h *HelpOverlay) Toggle() {
 // Close will hide the help overlay
 func (h *HelpOverlay) Close() {
 	h.isOpen = false
-	h.closeButton.SetVisible(false)
-	h.guiManager.SetLayout(nil)
+	h.panelGroup.SetVisible(false)
+	h.onCloseCb()
+}
+
+// SetOnCloseCb sets the callback run when Close() is called
+func (h *HelpOverlay) SetOnCloseCb(cb func()) {
+	h.onCloseCb = cb
 }
 
 func (h *HelpOverlay) open() {
 	h.isOpen = true
-	if h.layout == nil {
-		h.layout = d2gui.CreateLayout(h.renderer, d2gui.PositionTypeHorizontal, h.asset)
-	}
-
-	h.closeButton.SetVisible(true)
-	h.closeButton.SetPressed(false)
-
-	h.guiManager.SetLayout(h.layout)
+	h.panelGroup.SetVisible(true)
 }
 
 // IsOpen returns whether or not the overlay is visible/open
@@ -227,22 +227,21 @@ func (h *HelpOverlay) IsOpen() bool {
 
 // IsInRect checks if the given point is within the overlay layout rectangle
 func (h *HelpOverlay) IsInRect(px, py int) bool {
-	ww, hh := h.layout.GetSize()
-	x, y := h.layout.GetPosition()
-
-	if px >= x && px <= x+ww && py >= y && py <= y+hh {
-		return true
-	}
-
-	return false
+	return h.panelGroup.Contains(px, py)
 }
 
 // Load the overlay graphical assets
 func (h *HelpOverlay) Load() {
+	h.panelGroup = h.uiManager.NewWidgetGroup(d2ui.RenderPriorityHelpPanel)
+
 	h.setupOverlayFrame()
 	h.setupTitleAndButton()
 	h.setupBulletedList()
 	h.setupLabelsWithLines()
+
+	h.backgroundWidget = h.uiManager.NewCustomWidgetCached(h.Render, screenWidth, screenHeight)
+	h.panelGroup.AddWidget(h.backgroundWidget)
+	h.panelGroup.SetVisible(false)
 }
 
 func (h *HelpOverlay) setupOverlayFrame() {
@@ -265,12 +264,12 @@ func (h *HelpOverlay) setupOverlayFrame() {
 	for _, frameIndex := range frames {
 		f, err := h.uiManager.NewSprite(d2resource.HelpBorder, d2resource.PaletteSky)
 		if err != nil {
-			log.Print(err)
+			h.Error(err.Error())
 		}
 
 		err = f.SetCurrentFrame(frameIndex)
 		if err != nil {
-			log.Print(err)
+			h.Error(err.Error())
 		}
 
 		frameWidth, frameHeight := f.GetCurrentFrameSize()
@@ -323,10 +322,13 @@ func (h *HelpOverlay) setupTitleAndButton() {
 	h.closeButton.SetPosition(closeButtonX, closeButtonY)
 	h.closeButton.SetVisible(false)
 	h.closeButton.OnActivated(func() { h.Close() })
+	h.closeButton.SetRenderPriority(d2ui.RenderPriorityForeground)
+	h.panelGroup.AddWidget(h.closeButton)
 
 	newLabel = h.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteSky)
 	newLabel.SetText(h.asset.TranslateString("strClose")) // "Close"
 	newLabel.SetPosition(closeButtonLabelX, closeButtonLabelY)
+	newLabel.Alignment = d2ui.HorizontalAlignCenter
 	h.text = append(h.text, newLabel)
 }
 
@@ -339,25 +341,25 @@ func (h *HelpOverlay) setupBulletedList() {
 		// "Ctrl" should be hotkey // "Hold Down <%s> to Run"
 		{text: fmt.Sprintf(
 			h.asset.TranslateString("StrHelp2"),
-			h.keyMap.GetKeysForGameEvent(d2enum.HoldRun).Primary.GetString(),
+			h.keyMap.KeyToString(h.keyMap.GetKeysForGameEvent(d2enum.HoldRun).Primary),
 		)},
 
 		// "Alt" should be hotkey // "Hold down <%s> to highlight items on the ground"
 		{text: fmt.Sprintf(
 			h.asset.TranslateString("StrHelp3"),
-			h.keyMap.GetKeysForGameEvent(d2enum.HoldShowGroundItems).Primary.GetString(),
+			h.keyMap.KeyToString(h.keyMap.GetKeysForGameEvent(d2enum.HoldShowGroundItems).Primary),
 		)},
 
 		// "Shift" should be hotkey // "Hold down <%s> to attack while standing still"
 		{text: fmt.Sprintf(
 			h.asset.TranslateString("StrHelp4"),
-			h.keyMap.GetKeysForGameEvent(d2enum.HoldStandStill).Primary.GetString(),
+			h.keyMap.KeyToString(h.keyMap.GetKeysForGameEvent(d2enum.HoldStandStill).Primary),
 		)},
 
 		// "Tab" should be hotkey // "Hit <%s> to toggle the automap on and off"
 		{text: fmt.Sprintf(
 			h.asset.TranslateString("StrHelp5"),
-			h.keyMap.GetKeysForGameEvent(d2enum.ToggleAutomap).Primary.GetString(),
+			h.keyMap.KeyToString(h.keyMap.GetKeysForGameEvent(d2enum.ToggleAutomap).Primary),
 		)},
 
 		// "Hit <Esc> to bring up the Game Menu"
@@ -372,7 +374,7 @@ func (h *HelpOverlay) setupBulletedList() {
 		// "H" should be hotkey,
 		{text: fmt.Sprintf(
 			h.asset.TranslateString("StrHelp8a"),
-			h.keyMap.GetKeysForGameEvent(d2enum.ToggleHelpScreen).Primary.GetString(),
+			h.keyMap.KeyToString(h.keyMap.GetKeysForGameEvent(d2enum.ToggleHelpScreen).Primary),
 		)},
 	}
 
@@ -559,12 +561,12 @@ func (h *HelpOverlay) createBullet(c callout) {
 
 	newDot, err := h.uiManager.NewSprite(d2resource.HelpYellowBullet, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		h.Error(err.Error())
 	}
 
 	err = newDot.SetCurrentFrame(0)
 	if err != nil {
-		log.Print(err)
+		h.Error(err.Error())
 	}
 
 	newDot.SetPosition(c.DotX, c.DotY+bulletOffsetY)
@@ -576,7 +578,7 @@ func (h *HelpOverlay) createLabel(c callout) {
 	newLabel.SetText(c.LabelText)
 	newLabel.SetPosition(c.LabelX, c.LabelY)
 	h.text = append(h.text, newLabel)
-	newLabel.Alignment = d2gui.HorizontalAlignCenter
+	newLabel.Alignment = d2ui.HorizontalAlignCenter
 }
 
 func (h *HelpOverlay) createCallout(c callout) {
@@ -584,7 +586,7 @@ func (h *HelpOverlay) createCallout(c callout) {
 	newLabel.Color[0] = color.White
 	newLabel.SetText(c.LabelText)
 	newLabel.SetPosition(c.LabelX, c.LabelY)
-	newLabel.Alignment = d2gui.HorizontalAlignCenter
+	newLabel.Alignment = d2ui.HorizontalAlignCenter
 	ww, hh := newLabel.GetTextMetrics(c.LabelText)
 	h.text = append(h.text, newLabel)
 	_ = ww
@@ -601,12 +603,12 @@ func (h *HelpOverlay) createCallout(c callout) {
 
 	newDot, err := h.uiManager.NewSprite(d2resource.HelpWhiteBullet, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		h.Error(err.Error())
 	}
 
 	err = newDot.SetCurrentFrame(0)
 	if err != nil {
-		log.Print(err)
+		h.Error(err.Error())
 	}
 
 	newDot.SetPosition(c.DotX, c.DotY)
@@ -614,17 +616,13 @@ func (h *HelpOverlay) createCallout(c callout) {
 }
 
 // Render the overlay to the given surface
-func (h *HelpOverlay) Render(target d2interface.Surface) error {
-	if !h.isOpen {
-		return nil
-	}
-
+func (h *HelpOverlay) Render(target d2interface.Surface) {
 	for _, f := range h.frames {
-		f.RenderNoError(target)
+		f.Render(target)
 	}
 
 	for _, t := range h.text {
-		t.RenderNoError(target)
+		t.Render(target)
 	}
 
 	for _, l := range h.lines {
@@ -632,6 +630,4 @@ func (h *HelpOverlay) Render(target d2interface.Surface) error {
 		target.DrawLine(l.MoveX, l.MoveY, l.Color)
 		target.Pop()
 	}
-
-	return nil
 }

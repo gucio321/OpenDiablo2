@@ -1,24 +1,66 @@
 package d2gamescreen
 
 import (
-	"fmt"
 	"image/color"
-	"log"
 	"math"
 	"os"
+	"strconv"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapentity"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2screen"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2client/d2clientconnectiontype"
 )
+
+// CreateCharacterSelect creates the character select screen and returns a pointer to it
+func CreateCharacterSelect(
+	navigator d2interface.Navigator,
+	asset *d2asset.AssetManager,
+	renderer d2interface.Renderer,
+	inputManager d2interface.InputManager,
+	audioProvider d2interface.AudioProvider,
+	ui *d2ui.UIManager,
+	connectionType d2clientconnectiontype.ClientConnectionType,
+	l d2util.LogLevel,
+	connectionHost string,
+) (*CharacterSelect, error) {
+	playerStateFactory, err := d2hero.NewHeroStateFactory(asset)
+	if err != nil {
+		return nil, err
+	}
+
+	entityFactory, err := d2mapentity.NewMapEntityFactory(asset)
+	if err != nil {
+		return nil, err
+	}
+
+	characterSelect := &CharacterSelect{
+		selectedCharacter: -1,
+		asset:             asset,
+		MapEntityFactory:  entityFactory,
+		renderer:          renderer,
+		connectionType:    connectionType,
+		connectionHost:    connectionHost,
+		inputManager:      inputManager,
+		audioProvider:     audioProvider,
+		navigator:         navigator,
+		uiManager:         ui,
+		HeroStateFactory:  playerStateFactory,
+	}
+
+	characterSelect.Logger = d2util.NewLogger()
+	characterSelect.Logger.SetLevel(l)
+	characterSelect.Logger.SetPrefix(logPrefix)
+
+	return characterSelect, nil
+}
 
 // CharacterSelect represents the character select screen
 type CharacterSelect struct {
@@ -47,6 +89,7 @@ type CharacterSelect struct {
 	tickTimer              float64
 	storedTickTimer        float64
 	showDeleteConfirmation bool
+	loaded                 bool
 	connectionType         d2clientconnectiontype.ClientConnectionType
 	connectionHost         string
 
@@ -55,42 +98,8 @@ type CharacterSelect struct {
 	audioProvider d2interface.AudioProvider
 	renderer      d2interface.Renderer
 	navigator     d2interface.Navigator
-}
 
-// CreateCharacterSelect creates the character select screen and returns a pointer to it
-func CreateCharacterSelect(
-	navigator d2interface.Navigator,
-	asset *d2asset.AssetManager,
-	renderer d2interface.Renderer,
-	inputManager d2interface.InputManager,
-	audioProvider d2interface.AudioProvider,
-	ui *d2ui.UIManager,
-	connectionType d2clientconnectiontype.ClientConnectionType,
-	connectionHost string,
-) (*CharacterSelect, error) {
-	playerStateFactory, err := d2hero.NewHeroStateFactory(asset)
-	if err != nil {
-		return nil, err
-	}
-
-	entityFactory, err := d2mapentity.NewMapEntityFactory(asset)
-	if err != nil {
-		return nil, err
-	}
-
-	return &CharacterSelect{
-		selectedCharacter: -1,
-		asset:             asset,
-		MapEntityFactory:  entityFactory,
-		renderer:          renderer,
-		connectionType:    connectionType,
-		connectionHost:    connectionHost,
-		inputManager:      inputManager,
-		audioProvider:     audioProvider,
-		navigator:         navigator,
-		uiManager:         ui,
-		HeroStateFactory:  playerStateFactory,
-	}, nil
+	*d2util.Logger
 }
 
 const (
@@ -153,7 +162,7 @@ func (v *CharacterSelect) OnLoad(loading d2screen.LoadingState) {
 
 	err := v.inputManager.BindHandler(v)
 	if err != nil {
-		fmt.Println("failed to add Character Select screen as event handler")
+		v.Error("failed to add Character Select screen as event handler")
 	}
 
 	loading.Progress(tenPercent)
@@ -195,6 +204,7 @@ func (v *CharacterSelect) OnLoad(loading d2screen.LoadingState) {
 	}
 
 	v.refreshGameStates()
+	v.loaded = true
 }
 
 func (v *CharacterSelect) loadBackground() {
@@ -204,7 +214,7 @@ func (v *CharacterSelect) loadBackground() {
 
 	v.background, err = v.uiManager.NewSprite(d2resource.CharacterSelectionBackground, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.background.SetPosition(bgX, bgY)
@@ -214,14 +224,14 @@ func (v *CharacterSelect) loadHeroTitle() {
 	heroTitleX, heroTitleY := 320, 23
 	v.d2HeroTitle = v.uiManager.NewLabel(d2resource.Font42, d2resource.PaletteUnits)
 	v.d2HeroTitle.SetPosition(heroTitleX, heroTitleY)
-	v.d2HeroTitle.Alignment = d2gui.HorizontalAlignCenter
+	v.d2HeroTitle.Alignment = d2ui.HorizontalAlignCenter
 }
 
 func (v *CharacterSelect) loadDeleteCharConfirm() {
 	v.deleteCharConfirmLabel = v.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteUnits)
 	lines := "Are you sure that you want\nto delete this character?\nTake note: this will delete all\nversions of this Character."
 	v.deleteCharConfirmLabel.SetText(lines)
-	v.deleteCharConfirmLabel.Alignment = d2gui.HorizontalAlignCenter
+	v.deleteCharConfirmLabel.Alignment = d2ui.HorizontalAlignCenter
 	deleteConfirmX, deleteConfirmY := 400, 185
 	v.deleteCharConfirmLabel.SetPosition(deleteConfirmX, deleteConfirmY)
 }
@@ -231,7 +241,7 @@ func (v *CharacterSelect) loadSelectionBox() {
 
 	v.selectionBox, err = v.uiManager.NewSprite(d2resource.CharacterSelectionSelectBox, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	selBoxX, selBoxY := 37, 86
@@ -243,7 +253,7 @@ func (v *CharacterSelect) loadOkCancelBox() {
 
 	v.okCancelBox, err = v.uiManager.NewSprite(d2resource.PopUpOkCancel, d2resource.PaletteFechar)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	okCancelX, okCancelY := 270, 175
@@ -282,17 +292,17 @@ func rgbaColor(rgba uint32) color.RGBA {
 }
 
 func (v *CharacterSelect) createButtons(loading d2screen.LoadingState) {
-	v.newCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall, "CREATE NEW\nCHARACTER")
-
+	v.newCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall, d2util.SplitIntoLinesWithMaxWidthOneLine(v.asset.TranslateString("#831"), 13))
 	v.newCharButton.SetPosition(newCharBtnX, newCharBtnY)
 	v.newCharButton.OnActivated(func() { v.onNewCharButtonClicked() })
 
-	v.convertCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall, "CONVERT TO\nEXPANSION")
-
+	v.convertCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall,
+		d2util.SplitIntoLinesWithMaxWidthOneLine(v.asset.TranslateString("#825"), 13))
 	v.convertCharButton.SetPosition(convertCharBtnX, convertCharBtnY)
 	v.convertCharButton.SetEnabled(false)
 
-	v.deleteCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall, "DELETE\nCHARACTER")
+	v.deleteCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall,
+		d2util.SplitIntoLinesWithMaxWidthOneLine(v.asset.TranslateString("#832"), 13))
 	v.deleteCharButton.OnActivated(func() { v.onDeleteCharButtonClicked() })
 	v.deleteCharButton.SetPosition(deleteCharBtnX, deleteCharBtnY)
 
@@ -323,7 +333,7 @@ func (v *CharacterSelect) onScrollUpdate() {
 }
 
 func (v *CharacterSelect) updateCharacterBoxes() {
-	expText := "EXPANSION CHARACTER"
+	expText := v.asset.TranslateString("#803")
 
 	for i := 0; i < 8; i++ {
 		idx := i + (v.charScrollbar.GetCurrentOffset() * 2)
@@ -338,7 +348,8 @@ func (v *CharacterSelect) updateCharacterBoxes() {
 		}
 
 		heroName := v.gameStates[idx].HeroName
-		heroInfo := "Level 1 " + v.gameStates[idx].HeroType.String()
+		heroInfo := v.asset.TranslateString("level") + " " + strconv.FormatInt(int64(v.gameStates[idx].Stats.Level), 10) +
+			" " + v.asset.TranslateHeroClass(v.gameStates[idx].HeroType)
 
 		v.characterNameLabel[i].SetText(d2ui.ColorTokenize(heroName, d2ui.ColorTokenGold))
 		v.characterStatsLabel[i].SetText(d2ui.ColorTokenize(heroInfo, d2ui.ColorTokenWhite))
@@ -355,6 +366,7 @@ func (v *CharacterSelect) updateCharacterBoxes() {
 			&equipment,
 			v.gameStates[idx].LeftSkill,
 			v.gameStates[idx].RightSkill,
+			v.gameStates[idx].Gold,
 		)
 	}
 }
@@ -369,17 +381,13 @@ func (v *CharacterSelect) onExitButtonClicked() {
 
 // Render renders the Character Select screen
 func (v *CharacterSelect) Render(screen d2interface.Surface) {
-	if err := v.background.RenderSegmented(screen, 4, 3, 0); err != nil {
-		return
-	}
+	v.background.RenderSegmented(screen, 4, 3, 0)
+	v.d2HeroTitle.Render(screen)
 
-	v.d2HeroTitle.RenderNoError(screen)
 	actualSelectionIndex := v.selectedCharacter - (v.charScrollbar.GetCurrentOffset() * 2)
 
 	if v.selectedCharacter > -1 && actualSelectionIndex >= 0 && actualSelectionIndex < 8 {
-		if err := v.selectionBox.RenderSegmented(screen, 2, 1, 0); err != nil {
-			return
-		}
+		v.selectionBox.RenderSegmented(screen, 2, 1, 0)
 	}
 
 	for i := 0; i < 8; i++ {
@@ -388,9 +396,9 @@ func (v *CharacterSelect) Render(screen d2interface.Surface) {
 			continue
 		}
 
-		v.characterNameLabel[i].RenderNoError(screen)
-		v.characterStatsLabel[i].RenderNoError(screen)
-		v.characterExpLabel[i].RenderNoError(screen)
+		v.characterNameLabel[i].Render(screen)
+		v.characterStatsLabel[i].Render(screen)
+		v.characterExpLabel[i].Render(screen)
 
 		x, y := v.characterNameLabel[i].GetPosition()
 		charImgX := x - selectionBoxImageOffsetX
@@ -402,12 +410,8 @@ func (v *CharacterSelect) Render(screen d2interface.Surface) {
 
 	if v.showDeleteConfirmation {
 		screen.DrawRect(screenWidth, screenHeight, rgbaColor(blackHalfOpacity))
-
-		if err := v.okCancelBox.RenderSegmented(screen, 2, 1, 0); err != nil {
-			return
-		}
-
-		v.deleteCharConfirmLabel.RenderNoError(screen)
+		v.okCancelBox.RenderSegmented(screen, 2, 1, 0)
+		v.deleteCharConfirmLabel.Render(screen)
 	}
 }
 
@@ -429,6 +433,10 @@ func (v *CharacterSelect) moveSelectionBox() {
 
 // OnMouseButtonDown is called when a mouse button is clicked
 func (v *CharacterSelect) OnMouseButtonDown(event d2interface.MouseEvent) bool {
+	if !v.loaded {
+		return false
+	}
+
 	if v.showDeleteConfirmation {
 		return false
 	}
@@ -497,7 +505,7 @@ func (v *CharacterSelect) onDeleteCharButtonClicked() {
 func (v *CharacterSelect) onDeleteCharacterConfirmClicked() {
 	err := os.Remove(v.gameStates[v.selectedCharacter].FilePath)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.charScrollbar.SetCurrentOffset(0)
@@ -554,6 +562,8 @@ func (v *CharacterSelect) OnUnload() error {
 	if err := v.inputManager.UnbindHandler(v); err != nil {
 		return err
 	}
+
+	v.loaded = false
 
 	return nil
 }

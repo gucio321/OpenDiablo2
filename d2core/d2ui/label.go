@@ -2,7 +2,6 @@ package d2ui
 
 import (
 	"image/color"
-	"log"
 	"regexp"
 	"strings"
 
@@ -10,27 +9,25 @@ import (
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 )
-
-// static check that UIFrame implements Widget
-var _ Widget = &Label{}
 
 // Label represents a user interface label
 type Label struct {
 	*BaseWidget
 	text            string
-	Alignment       d2gui.HorizontalAlign
+	Alignment       HorizontalAlign
 	font            *d2asset.Font
 	Color           map[int]color.Color
 	backgroundColor color.Color
+
+	*d2util.Logger
 }
 
 // NewLabel creates a new instance of a UI label
 func (ui *UIManager) NewLabel(fontPath, palettePath string) *Label {
 	font, err := ui.asset.LoadFont(fontPath+".tbl", fontPath+".dc6", palettePath)
 	if err != nil {
-		log.Print(err)
+		ui.Error(err.Error())
 		return nil
 	}
 
@@ -38,9 +35,10 @@ func (ui *UIManager) NewLabel(fontPath, palettePath string) *Label {
 
 	result := &Label{
 		BaseWidget: base,
-		Alignment:  d2gui.HorizontalAlignLeft,
+		Alignment:  HorizontalAlignLeft,
 		Color:      map[int]color.Color{0: color.White},
 		font:       font,
+		Logger:     ui.Logger,
 	}
 
 	result.bindManager(ui)
@@ -48,14 +46,8 @@ func (ui *UIManager) NewLabel(fontPath, palettePath string) *Label {
 	return result
 }
 
-// Render draws the label on the screen
-func (v *Label) Render(target d2interface.Surface) error {
-	v.RenderNoError(target)
-	return nil
-}
-
-// RenderNoError draws the label on the screen, respliting the lines to allow for other alignments.
-func (v *Label) RenderNoError(target d2interface.Surface) {
+// Render draws the label on the screen, respliting the lines to allow for other alignments.
+func (v *Label) Render(target d2interface.Surface) {
 	target.PushTranslation(v.GetPosition())
 
 	lines := strings.Split(v.text, "\n")
@@ -85,7 +77,7 @@ func (v *Label) RenderNoError(target d2interface.Surface) {
 
 			err := v.font.RenderText(character, target)
 			if err != nil {
-				log.Print(err)
+				v.Error(err.Error())
 			}
 
 			target.PushTranslation(charWidth, 0)
@@ -143,7 +135,11 @@ func (v *Label) processColorTokens(str string) string {
 		matchToken := tokenMatch.Find(match)
 		matchStr := string(tokenMatch.ReplaceAll(match, empty))
 		token := ColorToken(matchToken)
+
 		theColor := getColor(token)
+		if theColor == nil {
+			continue
+		}
 
 		if v.Color == nil {
 			v.Color = make(map[int]color.Color)
@@ -159,14 +155,14 @@ func (v *Label) processColorTokens(str string) string {
 
 func (v *Label) getAlignOffset(textWidth int) int {
 	switch v.Alignment {
-	case d2gui.HorizontalAlignLeft:
+	case HorizontalAlignLeft:
 		return 0
-	case d2gui.HorizontalAlignCenter:
+	case HorizontalAlignCenter:
 		return -textWidth / 2
-	case d2gui.HorizontalAlignRight:
+	case HorizontalAlignRight:
 		return -textWidth
 	default:
-		log.Fatal("Invalid Alignment")
+		v.Fatal("Invalid Alignment")
 		return 0
 	}
 }
@@ -193,7 +189,7 @@ func getColor(token ColorToken) color.Color {
 	chosen := colors[token]
 
 	if chosen == nil {
-		return colors[ColorTokenWhite]
+		return nil
 	}
 
 	return chosen

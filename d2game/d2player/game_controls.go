@@ -2,7 +2,6 @@ package d2player
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -22,6 +21,10 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
+const (
+	logPrefix = "Player"
+)
+
 // Panel represents the panel at the bottom of the game screen
 type Panel interface {
 	IsOpen() bool
@@ -39,25 +42,17 @@ const (
 	xp
 	walkRun
 	stamina
-	miniPnl
 	newSkills
 	rightSkill
 	hpGlobe
 	manaGlobe
-	miniPanelCharacter
-	miniPanelInventory
-	miniPanelSkillTree
-	miniPanelAutomap
-	miniPanelMessageLog
-	miniPanelQuestLog
-	miniPanelGameMenu
 )
 
 const (
 	leftSkillX,
 	leftSkillY,
 	leftSkillWidth,
-	leftSkillHeight = 115, 550, 50, 50
+	leftSkillHeight = 117, 550, 50, 50
 
 	newStatsX,
 	newStatsY,
@@ -79,11 +74,6 @@ const (
 	staminaWidth,
 	staminaHeight = 273, 573, 105, 20
 
-	miniPnlX,
-	miniPnlY,
-	miniPnlWidth,
-	miniPnlHeight = 393, 563, 12, 23
-
 	newSkillsX,
 	newSkillsY,
 	newSkillsWidth,
@@ -92,7 +82,7 @@ const (
 	rightSkillX,
 	rightSkillY,
 	rightSkillWidth,
-	rightSkillHeight = 634, 550, 50, 50
+	rightSkillHeight = 635, 550, 50, 50
 
 	hpGlobeX,
 	hpGlobeY,
@@ -103,41 +93,6 @@ const (
 	manaGlobeY,
 	manaGlobeWidth,
 	manaGlobeHeight = 695, 525, 80, 60
-
-	miniPanelCharacterX,
-	miniPanelCharacterY,
-	miniPanelCharacterWidth,
-	miniPanelCharacterHeight = 324, 528, 22, 26
-
-	miniPanelInventoryX,
-	miniPanelInventoryY,
-	miniPanelInventoryWidth,
-	miniPanelInventoryHeight = 346, 528, 22, 26
-
-	miniPanelSkillTreeX,
-	miniPanelSkillTreeY,
-	miniPanelSkillTreeWidth,
-	miniPanelSkillTreeHeight = 368, 528, 22, 26
-
-	miniPanelAutomapX,
-	miniPanelAutomapY,
-	miniPanelAutomapWidth,
-	miniPanelAutomapHeight = 390, 528, 22, 26
-
-	miniPanelMessageLogX,
-	miniPanelMessageLogY,
-	miniPanelMessageLogWidth,
-	miniPanelMessageLogHeight = 412, 528, 22, 26
-
-	miniPanelQuestLogX,
-	miniPanelQuestLogY,
-	miniPanelQuestLogWidth,
-	miniPanelQuestLogHeight = 434, 528, 22, 26
-
-	miniPanelGameMenuX,
-	miniPanelGameMenuY,
-	miniPanelGameMenuWidth,
-	miniPanelGameMenuHeight = 456, 528, 22, 26
 )
 
 const (
@@ -157,50 +112,6 @@ const (
 	menuRightRectH = 400, 0, 400, 600
 )
 
-// GameControls represents the game's controls on the screen
-type GameControls struct {
-	keyMap                 *KeyMap
-	actionableRegions      []actionableRegion
-	asset                  *d2asset.AssetManager
-	renderer               d2interface.Renderer // https://github.com/OpenDiablo2/OpenDiablo2/issues/798
-	inputListener          inputCallbackListener
-	hero                   *d2mapentity.Player
-	heroState              *d2hero.HeroStateFactory
-	mapRenderer            *d2maprenderer.MapRenderer
-	escapeMenu             *EscapeMenu
-	ui                     *d2ui.UIManager
-	inventory              *Inventory
-	hud                    *HUD
-	skilltree              *skillTree
-	heroStatsPanel         *HeroStatsPanel
-	HelpOverlay            *HelpOverlay
-	bottomMenuRect         *d2geom.Rectangle
-	leftMenuRect           *d2geom.Rectangle
-	rightMenuRect          *d2geom.Rectangle
-	lastMouseX             int
-	lastMouseY             int
-	lastLeftBtnActionTime  float64
-	lastRightBtnActionTime float64
-	FreeCam                bool
-	isSinglePlayer         bool
-}
-
-type actionableType int
-
-type actionableRegion struct {
-	actionableTypeID actionableType
-	rect             d2geom.Rectangle
-}
-
-// SkillResource represents a Skill with its corresponding icon sprite, path to DC6 file and icon number.
-// SkillResourcePath points to a DC6 resource which contains the icons of multiple skills as frames.
-// The IconNumber is the frame at which we can find our skill sprite in the DC6 file.
-type SkillResource struct {
-	SkillResourcePath string // path to a skills DC6 file(see getSkillResourceByClass)
-	IconNumber        int    // the index of the frame in the DC6 file
-	SkillIcon         *d2ui.Sprite
-}
-
 // NewGameControls creates a GameControls instance and returns a pointer to it
 // nolint:funlen // doesn't make sense to split this up
 func NewGameControls(
@@ -214,7 +125,8 @@ func NewGameControls(
 	term d2interface.Terminal,
 	ui *d2ui.UIManager,
 	guiManager *d2gui.GuiManager,
-
+	keyMap *KeyMap,
+	l d2util.LogLevel,
 	isSinglePlayer bool,
 ) (*GameControls, error) {
 	var inventoryRecordKey string
@@ -269,12 +181,6 @@ func NewGameControls(
 			Width:  staminaWidth,
 			Height: staminaHeight,
 		}},
-		{miniPnl, d2geom.Rectangle{
-			Left:   miniPnlX,
-			Top:    miniPnlY,
-			Width:  miniPnlWidth,
-			Height: miniPnlHeight,
-		}},
 		{newSkills, d2geom.Rectangle{
 			Left:   newSkillsX,
 			Top:    newSkillsY,
@@ -299,60 +205,22 @@ func NewGameControls(
 			Width:  manaGlobeWidth,
 			Height: manaGlobeHeight,
 		}},
-		{miniPanelCharacter, d2geom.Rectangle{
-			Left:   miniPanelCharacterX,
-			Top:    miniPanelCharacterY,
-			Width:  miniPanelCharacterWidth,
-			Height: miniPanelCharacterHeight,
-		}},
-		{miniPanelInventory, d2geom.Rectangle{
-			Left:   miniPanelInventoryX,
-			Top:    miniPanelInventoryY,
-			Width:  miniPanelInventoryWidth,
-			Height: miniPanelInventoryHeight,
-		}},
-		{miniPanelSkillTree, d2geom.Rectangle{
-			Left:   miniPanelSkillTreeX,
-			Top:    miniPanelSkillTreeY,
-			Width:  miniPanelSkillTreeWidth,
-			Height: miniPanelSkillTreeHeight,
-		}},
-		{miniPanelAutomap, d2geom.Rectangle{
-			Left:   miniPanelAutomapX,
-			Top:    miniPanelAutomapY,
-			Width:  miniPanelAutomapWidth,
-			Height: miniPanelAutomapHeight,
-		}},
-		{miniPanelMessageLog, d2geom.Rectangle{
-			Left:   miniPanelMessageLogX,
-			Top:    miniPanelMessageLogY,
-			Width:  miniPanelMessageLogWidth,
-			Height: miniPanelMessageLogHeight,
-		}},
-		{miniPanelQuestLog, d2geom.Rectangle{
-			Left:   miniPanelQuestLogX,
-			Top:    miniPanelQuestLogY,
-			Width:  miniPanelQuestLogWidth,
-			Height: miniPanelQuestLogHeight,
-		}},
-		{miniPanelGameMenu, d2geom.Rectangle{
-			Left:   miniPanelGameMenuX,
-			Top:    miniPanelGameMenuY,
-			Width:  miniPanelGameMenuWidth,
-			Height: miniPanelGameMenuHeight,
-		}},
 	}
-
 	inventoryRecord := asset.Records.Layout.Inventory[inventoryRecordKey]
+
+	heroStatsPanel := NewHeroStatsPanel(asset, ui, hero.Name(), hero.Class, l, hero.Stats)
+	inventory := NewInventory(asset, ui, l, hero.Gold, inventoryRecord)
+	skilltree := newSkillTree(hero.Skills, hero.Class, asset, l, ui)
+
+	miniPanel := newMiniPanel(asset, ui, l, isSinglePlayer)
 
 	heroState, err := d2hero.NewHeroStateFactory(asset)
 	if err != nil {
 		return nil, err
 	}
 
-	keyMap := getDefaultKeyMap()
-	helpOverlay := NewHelpOverlay(asset, renderer, ui, guiManager, keyMap)
-	hud := NewHUD(asset, ui, hero, helpOverlay, newMiniPanel(asset, ui, isSinglePlayer), actionableRegions, mapEngine, mapRenderer)
+	helpOverlay := NewHelpOverlay(asset, ui, l, keyMap)
+	hud := NewHUD(asset, ui, hero, miniPanel, actionableRegions, mapEngine, l, mapRenderer)
 
 	const blackAlpha50percent = 0x0000007f
 
@@ -360,7 +228,6 @@ func NewGameControls(
 	hoverLabel.SetBackgroundColor(d2util.Color(blackAlpha50percent))
 
 	gc := &GameControls{
-		keyMap:         keyMap,
 		asset:          asset,
 		ui:             ui,
 		renderer:       renderer,
@@ -369,10 +236,11 @@ func NewGameControls(
 		escapeMenu:     escapeMenu,
 		inputListener:  inputListener,
 		mapRenderer:    mapRenderer,
-		inventory:      NewInventory(asset, ui, inventoryRecord),
-		skilltree:      newSkillTree(hero.Skills, hero.Class, asset, ui),
-		heroStatsPanel: NewHeroStatsPanel(asset, ui, hero.Name(), hero.Class, hero.Stats),
+		inventory:      inventory,
+		skilltree:      skilltree,
+		heroStatsPanel: heroStatsPanel,
 		HelpOverlay:    helpOverlay,
+		keyMap:         keyMap,
 		hud:            hud,
 		bottomMenuRect: &d2geom.Rectangle{
 			Left:   menuBottomRectX,
@@ -398,17 +266,69 @@ func NewGameControls(
 		isSinglePlayer:         isSinglePlayer,
 	}
 
-	closeCb := func() { gc.updateLayout() }
-	gc.heroStatsPanel.SetOnCloseCb(closeCb)
-	gc.inventory.SetOnCloseCb(closeCb)
-	gc.skilltree.SetOnCloseCb(closeCb)
+	gc.heroStatsPanel.SetOnCloseCb(gc.onCloseHeroStatsPanel)
+	gc.inventory.SetOnCloseCb(gc.onCloseInventory)
+	gc.skilltree.SetOnCloseCb(gc.onCloseSkilltree)
+
+	gc.escapeMenu.SetOnCloseCb(gc.hud.miniPanel.restoreDisabled)
+	gc.HelpOverlay.SetOnCloseCb(gc.hud.miniPanel.restoreDisabled)
 
 	err = gc.bindTerminalCommands(term)
 	if err != nil {
 		return nil, err
 	}
 
+	gc.Logger = d2util.NewLogger()
+	gc.Logger.SetLevel(l)
+	gc.Logger.SetPrefix(logPrefix)
+
 	return gc, nil
+}
+
+// GameControls represents the game's controls on the screen
+type GameControls struct {
+	keyMap                 *KeyMap
+	actionableRegions      []actionableRegion
+	asset                  *d2asset.AssetManager
+	renderer               d2interface.Renderer // https://github.com/OpenDiablo2/OpenDiablo2/issues/798
+	inputListener          inputCallbackListener
+	hero                   *d2mapentity.Player
+	heroState              *d2hero.HeroStateFactory
+	mapRenderer            *d2maprenderer.MapRenderer
+	escapeMenu             *EscapeMenu
+	ui                     *d2ui.UIManager
+	inventory              *Inventory
+	hud                    *HUD
+	skilltree              *skillTree
+	heroStatsPanel         *HeroStatsPanel
+	HelpOverlay            *HelpOverlay
+	bottomMenuRect         *d2geom.Rectangle
+	leftMenuRect           *d2geom.Rectangle
+	rightMenuRect          *d2geom.Rectangle
+	lastMouseX             int
+	lastMouseY             int
+	lastLeftBtnActionTime  float64
+	lastRightBtnActionTime float64
+	FreeCam                bool
+	isSinglePlayer         bool
+
+	*d2util.Logger
+}
+
+type actionableType int
+
+type actionableRegion struct {
+	actionableTypeID actionableType
+	rect             d2geom.Rectangle
+}
+
+// SkillResource represents a Skill with its corresponding icon sprite, path to DC6 file and icon number.
+// SkillResourcePath points to a DC6 resource which contains the icons of multiple skills as frames.
+// The IconNumber is the frame at which we can find our skill sprite in the DC6 file.
+type SkillResource struct {
+	SkillResourcePath string // path to a skills DC6 file(see getSkillResourceByClass)
+	IconNumber        int    // the index of the frame in the DC6 file
+	SkillIcon         *d2ui.Sprite
 }
 
 // OnKeyRepeat is called to handle repeated key presses
@@ -468,19 +388,18 @@ func (g *GameControls) OnKeyDown(event d2interface.KeyEvent) bool {
 		g.HelpOverlay.Close()
 		g.updateLayout()
 	case d2enum.ToggleInventoryPanel:
-		g.inventory.Toggle()
-		g.updateLayout()
+		g.toggleInventoryPanel()
 	case d2enum.ToggleSkillTreePanel:
-		g.skilltree.Toggle()
-		g.updateLayout()
+		g.toggleInventoryPanel()
 	case d2enum.ToggleCharacterPanel:
-		g.heroStatsPanel.Toggle()
-		g.updateLayout()
+		g.toggleHeroStatsPanel()
 	case d2enum.ToggleRunWalk:
 		g.hud.onToggleRunButton(false)
 	case d2enum.HoldRun:
 		g.hud.onToggleRunButton(true)
 	case d2enum.ToggleHelpScreen:
+		g.hud.miniPanel.openDisabled()
+
 		g.HelpOverlay.Toggle()
 		g.updateLayout()
 	default:
@@ -548,7 +467,7 @@ func (g *GameControls) onEscKey() {
 		if g.escapeMenu.IsOpen() {
 			g.escapeMenu.OnEscKey()
 		} else {
-			g.escapeMenu.open()
+			g.openEscMenu()
 		}
 	}
 }
@@ -639,6 +558,11 @@ func (g *GameControls) OnMouseMove(event d2interface.MouseMoveEvent) bool {
 	return false
 }
 
+// OnMouseButtonUp handles mouse button presses
+func (g *GameControls) OnMouseButtonUp(event d2interface.MouseEvent) bool {
+	return false
+}
+
 // OnMouseButtonDown handles mouse button presses
 func (g *GameControls) OnMouseButtonDown(event d2interface.MouseEvent) bool {
 	mx, my := event.X(), event.Y()
@@ -686,6 +610,50 @@ func (g *GameControls) OnMouseButtonDown(event d2interface.MouseEvent) bool {
 	return false
 }
 
+func (g *GameControls) toggleHeroStatsPanel() {
+	g.heroStatsPanel.Toggle()
+	g.hud.miniPanel.SetMovedRight(g.heroStatsPanel.IsOpen())
+	g.updateLayout()
+}
+
+func (g *GameControls) onCloseHeroStatsPanel() {
+	g.hud.miniPanel.SetMovedRight(g.heroStatsPanel.IsOpen())
+	g.updateLayout()
+}
+
+func (g *GameControls) toggleInventoryPanel() {
+	g.skilltree.Close()
+	g.inventory.Toggle()
+	g.hud.miniPanel.SetMovedLeft(g.inventory.IsOpen())
+	g.updateLayout()
+}
+
+func (g *GameControls) onCloseInventory() {
+	g.hud.miniPanel.SetMovedLeft(g.inventory.IsOpen())
+	g.updateLayout()
+}
+
+func (g *GameControls) toggleSkilltreePanel() {
+	g.inventory.Close()
+	g.skilltree.Toggle()
+	g.hud.miniPanel.SetMovedLeft(g.skilltree.IsOpen())
+	g.updateLayout()
+}
+
+func (g *GameControls) onCloseSkilltree() {
+	g.hud.miniPanel.SetMovedLeft(g.skilltree.IsOpen())
+	g.updateLayout()
+}
+
+func (g *GameControls) openEscMenu() {
+	g.inventory.Close()
+	g.skilltree.Close()
+	g.heroStatsPanel.Close()
+	g.hud.miniPanel.closeDisabled()
+	g.escapeMenu.open()
+	g.updateLayout()
+}
+
 // Load the resources required for the GameControls
 func (g *GameControls) Load() {
 	g.hud.Load()
@@ -693,11 +661,25 @@ func (g *GameControls) Load() {
 	g.skilltree.load()
 	g.heroStatsPanel.Load()
 	g.HelpOverlay.Load()
+
+	miniPanelActions := &miniPanelActions{
+		characterToggle: g.toggleHeroStatsPanel,
+		inventoryToggle: g.toggleInventoryPanel,
+		skilltreeToggle: g.toggleSkilltreePanel,
+		menuToggle:      g.openEscMenu,
+	}
+	g.hud.miniPanel.load(miniPanelActions)
 }
 
 // Advance advances the state of the GameControls
 func (g *GameControls) Advance(elapsed float64) error {
 	g.mapRenderer.Advance(elapsed)
+	g.hud.Advance(elapsed)
+
+	if err := g.escapeMenu.Advance(elapsed); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -737,7 +719,7 @@ func (g *GameControls) isInActiveMenusRect(px, py int) bool {
 		return true
 	}
 
-	if g.hud.miniPanel.IsOpen() && g.hud.miniPanel.isInRect(px, py) {
+	if g.hud.miniPanel.IsOpen() && g.hud.miniPanel.IsInRect(px, py) {
 		return true
 	}
 
@@ -766,11 +748,14 @@ func (g *GameControls) Render(target d2interface.Surface) error {
 		return err
 	}
 
+	if err := g.escapeMenu.Render(target); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (g *GameControls) renderPanels(target d2interface.Surface) error {
-	g.heroStatsPanel.Render(target)
 	g.inventory.Render(target)
 
 	return nil
@@ -816,28 +801,20 @@ func (g *GameControls) ToggleManaStats() {
 // Handles what to do when an actionable is hovered
 func (g *GameControls) onHoverActionable(item actionableType) {
 	hoverMap := map[actionableType]func(){
-		leftSkill:           func() {},
-		newStats:            func() {},
-		xp:                  func() {},
-		walkRun:             func() {},
-		stamina:             func() {},
-		miniPnl:             func() {},
-		newSkills:           func() {},
-		rightSkill:          func() {},
-		hpGlobe:             func() {},
-		manaGlobe:           func() {},
-		miniPanelCharacter:  func() {},
-		miniPanelInventory:  func() {},
-		miniPanelSkillTree:  func() {},
-		miniPanelAutomap:    func() {},
-		miniPanelMessageLog: func() {},
-		miniPanelQuestLog:   func() {},
-		miniPanelGameMenu:   func() {},
+		leftSkill:  func() {},
+		newStats:   func() {},
+		xp:         func() {},
+		walkRun:    func() {},
+		stamina:    func() {},
+		newSkills:  func() {},
+		rightSkill: func() {},
+		hpGlobe:    func() {},
+		manaGlobe:  func() {},
 	}
 
 	onHover, found := hoverMap[item]
 	if !found {
-		log.Printf("Unrecognized actionableType(%d) being hovered\n", item)
+		g.Errorf("Unrecognized actionableType(%d) being hovered", item)
 		return
 	}
 
@@ -852,29 +829,23 @@ func (g *GameControls) onClickActionable(item actionableType) {
 		},
 
 		newStats: func() {
-			log.Println("New Stats Selector Action Pressed")
+			g.Info("New Stats Selector Action Pressed")
 		},
 
 		xp: func() {
-			log.Println("XP Action Pressed")
+			g.Info("XP Action Pressed")
 		},
 
 		walkRun: func() {
-			log.Println("Walk/Run Action Pressed")
+			g.Info("Walk/Run Action Pressed")
 		},
 
 		stamina: func() {
-			log.Println("Stamina Action Pressed")
-		},
-
-		miniPnl: func() {
-			log.Println("Mini Panel Action Pressed")
-
-			g.hud.miniPanel.Toggle()
+			g.Info("Stamina Action Pressed")
 		},
 
 		newSkills: func() {
-			log.Println("New Skills Selector Action Pressed")
+			g.Info("New Skills Selector Action Pressed")
 		},
 
 		rightSkill: func() {
@@ -883,44 +854,19 @@ func (g *GameControls) onClickActionable(item actionableType) {
 
 		hpGlobe: func() {
 			g.ToggleHpStats()
-			log.Println("HP Globe Pressed")
+			g.Info("HP Globe Pressed")
 		},
 
 		manaGlobe: func() {
 			g.ToggleManaStats()
-			log.Println("Mana Globe Pressed")
-		},
-
-		miniPanelCharacter: func() {
-			log.Println("Character button on mini panel is pressed")
-
-			g.heroStatsPanel.Toggle()
-			g.updateLayout()
-		},
-
-		miniPanelInventory: func() {
-			log.Println("Inventory button on mini panel is pressed")
-
-			g.inventory.Toggle()
-			g.updateLayout()
-		},
-
-		miniPanelSkillTree: func() {
-			log.Println("Skilltree button on mini panel is pressed")
-
-			g.skilltree.Toggle()
-			g.updateLayout()
-		},
-
-		miniPanelGameMenu: func() {
-			g.hud.miniPanel.Close()
-			g.escapeMenu.open()
+			g.Info("Mana Globe Pressed")
 		},
 	}
 
 	action, found := actionMap[item]
 	if !found {
-		log.Printf("Unrecognized actionableType(%d) being clicked\n", item)
+		// Warning, because some action types are still todo, and could return this error
+		g.Warningf("Unrecognized actionableType(%d) being clicked", item)
 		return
 	}
 
@@ -1030,7 +976,7 @@ func (g *GameControls) bindLearnSkillsCommand(term d2interface.Terminal) error {
 		}
 
 		g.hud.skillSelectMenu.RegenerateImageCache()
-		log.Printf("Learned %d skills", learnedSkillsCount)
+		g.Infof("Learned %d skills", learnedSkillsCount)
 
 		if err != nil {
 			term.OutputErrorf("cannot learn skill for class, error: %s", err)
@@ -1067,7 +1013,7 @@ func (g *GameControls) bindLearnSkillByIDCommand(term d2interface.Terminal) erro
 		}
 
 		g.hud.skillSelectMenu.RegenerateImageCache()
-		log.Println("Learned skill: ", skill.Skill)
+		g.Info("Learned skill: " + skill.Skill)
 	}
 
 	return term.BindAction(

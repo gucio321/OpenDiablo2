@@ -1,14 +1,14 @@
 package d2player
 
 import (
-	"log"
 	"strconv"
+	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
@@ -28,14 +28,14 @@ const (
 	labelLevelX, labelLevelY = 110, 100
 
 	labelHeroNameX, labelHeroNameY   = 165, 72
-	labelHeroClassX, labelHeroClassY = 330, 72
+	labelHeroClassX, labelHeroClassY = 330, 74
 
 	labelExperienceX, labelExperienceY = 200, 100
 	labelNextLevelX, labelNextLevelY   = 330, 100
 
 	labelStrengthX, labelStrengthY   = 100, 150
 	labelDexterityX, labelDexterityY = 100, 213
-	labelVitalityX, labelVitalityY   = 100, 300
+	labelVitalityX, labelVitalityY   = 95, 300
 	labelEnergyX, labelEnergyY       = 100, 360
 
 	labelDefenseX, labelDefenseY = 280, 260
@@ -43,14 +43,14 @@ const (
 	labelLifeX, labelLifeY       = 280, 322
 	labelManaX, labelManaY       = 280, 360
 
-	labelResFireLine1X, labelResFireLine1Y   = 310, 395
-	labelResFireLine2X, labelResFireLine2Y   = 310, 402
-	labelResColdLine1X, labelResColdLine1Y   = 310, 445
+	labelResFireLine1X, labelResFireLine1Y   = 310, 396
+	labelResFireLine2X, labelResFireLine2Y   = 310, 403
+	labelResColdLine1X, labelResColdLine1Y   = 310, 444
 	labelResColdLine2X, labelResColdLine2Y   = 310, 452
 	labelResLightLine1X, labelResLightLine1Y = 310, 420
-	labelResLightLine2X, labelResLightLine2Y = 310, 427
+	labelResLightLine2X, labelResLightLine2Y = 310, 428
 	labelResPoisLine1X, labelResPoisLine1Y   = 310, 468
-	labelResPoisLine2X, labelResPoisLine2Y   = 310, 477
+	labelResPoisLine2X, labelResPoisLine2Y   = 310, 476
 )
 
 const (
@@ -83,36 +83,19 @@ type StatsPanelLabels struct {
 	Stamina      *d2ui.Label
 }
 
-// HeroStatsPanel represents the hero status panel
-type HeroStatsPanel struct {
-	asset                *d2asset.AssetManager
-	uiManager            *d2ui.UIManager
-	frame                *d2ui.UIFrame
-	panel                *d2ui.Sprite
-	heroState            *d2hero.HeroStatsState
-	heroName             string
-	heroClass            d2enum.Hero
-	renderer             d2interface.Renderer
-	staticMenuImageCache *d2interface.Surface
-	labels               *StatsPanelLabels
-	closeButton          *d2ui.Button
-	onCloseCb            func()
-
-	originX int
-	originY int
-	isOpen  bool
-}
-
 // NewHeroStatsPanel creates a new hero status panel
-func NewHeroStatsPanel(asset *d2asset.AssetManager, ui *d2ui.UIManager, heroName string, heroClass d2enum.Hero,
+func NewHeroStatsPanel(asset *d2asset.AssetManager,
+	ui *d2ui.UIManager,
+	heroName string,
+	heroClass d2enum.Hero,
+	l d2util.LogLevel,
 	heroState *d2hero.HeroStatsState) *HeroStatsPanel {
 	originX := 0
 	originY := 0
 
-	return &HeroStatsPanel{
+	hsp := &HeroStatsPanel{
 		asset:     asset,
 		uiManager: ui,
-		renderer:  ui.Renderer(),
 		originX:   originX,
 		originY:   originY,
 		heroState: heroState,
@@ -120,25 +103,59 @@ func NewHeroStatsPanel(asset *d2asset.AssetManager, ui *d2ui.UIManager, heroName
 		heroClass: heroClass,
 		labels:    &StatsPanelLabels{},
 	}
+
+	hsp.Logger = d2util.NewLogger()
+	hsp.Logger.SetLevel(l)
+	hsp.Logger.SetPrefix(logPrefix)
+
+	return hsp
+}
+
+// HeroStatsPanel represents the hero status panel
+type HeroStatsPanel struct {
+	asset      *d2asset.AssetManager
+	uiManager  *d2ui.UIManager
+	panel      *d2ui.Sprite
+	heroState  *d2hero.HeroStatsState
+	heroName   string
+	heroClass  d2enum.Hero
+	labels     *StatsPanelLabels
+	onCloseCb  func()
+	panelGroup *d2ui.WidgetGroup
+
+	originX int
+	originY int
+	isOpen  bool
+
+	*d2util.Logger
 }
 
 // Load the data for the hero status panel
 func (s *HeroStatsPanel) Load() {
 	var err error
 
-	s.frame = d2ui.NewUIFrame(s.asset, s.uiManager, d2ui.FrameLeft)
+	s.panelGroup = s.uiManager.NewWidgetGroup(d2ui.RenderPriorityHeroStatsPanel)
 
-	s.closeButton = s.uiManager.NewButton(d2ui.ButtonTypeSquareClose, "")
-	s.closeButton.SetVisible(false)
-	s.closeButton.SetPosition(heroStatsCloseButtonX, heroStatsCloseButtonY)
-	s.closeButton.OnActivated(func() { s.Close() })
+	frame := d2ui.NewUIFrame(s.asset, s.uiManager, d2ui.FrameLeft)
+	s.panelGroup.AddWidget(frame)
 
 	s.panel, err = s.uiManager.NewSprite(d2resource.InventoryCharacterPanel, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		s.Error(err.Error())
 	}
 
+	w, h := frame.GetSize()
+	staticPanel := s.uiManager.NewCustomWidgetCached(s.renderStaticMenu, w, h)
+	s.panelGroup.AddWidget(staticPanel)
+
+	closeButton := s.uiManager.NewButton(d2ui.ButtonTypeSquareClose, "")
+	closeButton.SetVisible(false)
+	closeButton.SetPosition(heroStatsCloseButtonX, heroStatsCloseButtonY)
+	closeButton.OnActivated(func() { s.Close() })
+	s.panelGroup.AddWidget(closeButton)
+
 	s.initStatValueLabels()
+	s.panelGroup.SetVisible(false)
 }
 
 // IsOpen returns true if the hero status panel is open
@@ -158,13 +175,13 @@ func (s *HeroStatsPanel) Toggle() {
 // Open opens the hero status panel
 func (s *HeroStatsPanel) Open() {
 	s.isOpen = true
-	s.closeButton.SetVisible(true)
+	s.panelGroup.SetVisible(true)
 }
 
 // Close closed the hero status panel
 func (s *HeroStatsPanel) Close() {
 	s.isOpen = false
-	s.closeButton.SetVisible(false)
+	s.panelGroup.SetVisible(false)
 	s.onCloseCb()
 }
 
@@ -173,45 +190,21 @@ func (s *HeroStatsPanel) SetOnCloseCb(cb func()) {
 	s.onCloseCb = cb
 }
 
-// Render renders the hero status panel
-func (s *HeroStatsPanel) Render(target d2interface.Surface) {
+// Advance updates labels on the panel
+func (s *HeroStatsPanel) Advance(elapsed float64) {
 	if !s.isOpen {
 		return
 	}
 
-	if s.staticMenuImageCache == nil {
-		frameWidth, frameHeight := s.frame.GetFrameBounds()
-		framesCount := s.frame.GetFrameCount()
-		surface := s.renderer.NewSurface(frameWidth*framesCount, frameHeight*framesCount)
-
-		s.staticMenuImageCache = &surface
-
-		err := s.renderStaticMenu(*s.staticMenuImageCache)
-		if err != nil {
-			log.Println(err)
-		}
-	}
-
-	target.Render(*s.staticMenuImageCache)
-
-	s.renderStatValues(target)
+	s.setStatValues()
 }
 
-func (s *HeroStatsPanel) renderStaticMenu(target d2interface.Surface) error {
-	if err := s.renderStaticPanelFrames(target); err != nil {
-		return err
-	}
-
+func (s *HeroStatsPanel) renderStaticMenu(target d2interface.Surface) {
+	s.renderStaticPanelFrames(target)
 	s.renderStaticLabels(target)
-
-	return nil
 }
 
-func (s *HeroStatsPanel) renderStaticPanelFrames(target d2interface.Surface) error {
-	if err := s.frame.Render(target); err != nil {
-		return err
-	}
-
+func (s *HeroStatsPanel) renderStaticPanelFrames(target d2interface.Surface) {
 	frames := []int{
 		statsPanelTopLeft,
 		statsPanelTopRight,
@@ -224,7 +217,7 @@ func (s *HeroStatsPanel) renderStaticPanelFrames(target d2interface.Surface) err
 
 	for _, frameIndex := range frames {
 		if err := s.panel.SetCurrentFrame(frameIndex); err != nil {
-			return err
+			s.Error(err.Error())
 		}
 
 		w, h := s.panel.GetCurrentFrameSize()
@@ -242,15 +235,17 @@ func (s *HeroStatsPanel) renderStaticPanelFrames(target d2interface.Surface) err
 			s.panel.SetPosition(currentX-w, currentY+h)
 		}
 
-		s.panel.RenderNoError(target)
+		s.panel.Render(target)
 	}
-
-	return nil
 }
 
 func (s *HeroStatsPanel) renderStaticLabels(target d2interface.Surface) {
 	var label *d2ui.Label
 
+	fr := strings.Split(s.asset.TranslateString("strchrfir"), "\n")
+	lr := strings.Split(s.asset.TranslateString("strchrlit"), "\n")
+	cr := strings.Split(s.asset.TranslateString("strchrcol"), "\n")
+	pr := strings.Split(s.asset.TranslateString("strchrpos"), "\n")
 	// all static labels are not stored since we use them only once to generate the image cache
 	var staticLabelConfigs = []struct {
 		x, y        int
@@ -259,32 +254,32 @@ func (s *HeroStatsPanel) renderStaticLabels(target d2interface.Surface) {
 		centerAlign bool
 	}{
 		{labelHeroNameX, labelHeroNameY, s.heroName, d2resource.Font16, true},
-		{labelHeroClassX, labelHeroClassY, s.heroClass.String(), d2resource.Font16, true},
+		{labelHeroClassX, labelHeroClassY, s.asset.TranslateHeroClass(s.heroClass), d2resource.Font16, true},
 
-		{labelLevelX, labelLevelY, "Level", d2resource.Font6, true},
-		{labelExperienceX, labelExperienceY, "Experience", d2resource.Font6, true},
-		{labelNextLevelX, labelNextLevelY, "Next Level", d2resource.Font6, true},
-		{labelStrengthX, labelStrengthY, "Strength", d2resource.Font6, false},
-		{labelDexterityX, labelDexterityY, "Dexterity", d2resource.Font6, false},
-		{labelVitalityX, labelVitalityY, "Vitality", d2resource.Font6, false},
-		{labelEnergyX, labelEnergyY, "Energy", d2resource.Font6, false},
-		{labelDefenseX, labelDefenseY, "Defense", d2resource.Font6, false},
-		{labelStaminaX, labelStaminaY, "Stamina", d2resource.Font6, true},
-		{labelLifeX, labelLifeY, "Life", d2resource.Font6, true},
-		{labelManaX, labelManaY, "Mana", d2resource.Font6, true},
+		{labelLevelX, labelLevelY, s.asset.TranslateString("strchrlvl"), d2resource.Font6, true},
+		{labelExperienceX, labelExperienceY, s.asset.TranslateString("strchrexp"), d2resource.Font6, true},
+		{labelNextLevelX, labelNextLevelY, s.asset.TranslateString("strchrnxtlvl"), d2resource.Font6, true},
+		{labelStrengthX, labelStrengthY, s.asset.TranslateString("strchrstr"), d2resource.Font6, false},
+		{labelDexterityX, labelDexterityY, s.asset.TranslateString("strchrdex"), d2resource.Font6, false},
+		{labelVitalityX, labelVitalityY, s.asset.TranslateString("strchrvit"), d2resource.Font6, false},
+		{labelEnergyX, labelEnergyY, s.asset.TranslateString("strchreng"), d2resource.Font6, false},
+		{labelDefenseX, labelDefenseY, s.asset.TranslateString("strchrdef"), d2resource.Font6, false},
+		{labelStaminaX, labelStaminaY, s.asset.TranslateString("strchrstm"), d2resource.Font6, true},
+		{labelLifeX, labelLifeY, s.asset.TranslateString("strchrlif"), d2resource.Font6, true},
+		{labelManaX, labelManaY, s.asset.TranslateString("strchrman"), d2resource.Font6, true},
 
 		// can't use "Fire\nResistance" because line spacing is too big and breaks the layout
-		{labelResFireLine1X, labelResFireLine1Y, "Fire", d2resource.Font6, true},
-		{labelResFireLine2X, labelResFireLine2Y, "Resistance", d2resource.Font6, true},
+		{labelResFireLine1X, labelResFireLine1Y, fr[0], d2resource.Font6, true},
+		{labelResFireLine2X, labelResFireLine2Y, fr[len(fr)-1], d2resource.Font6, true},
 
-		{labelResColdLine1X, labelResColdLine1Y, "Cold", d2resource.Font6, true},
-		{labelResColdLine2X, labelResColdLine2Y, "Resistance", d2resource.Font6, true},
+		{labelResColdLine1X, labelResColdLine1Y, cr[0], d2resource.Font6, true},
+		{labelResColdLine2X, labelResColdLine2Y, cr[len(cr)-1], d2resource.Font6, true},
 
-		{labelResLightLine1X, labelResLightLine1Y, "Lightning", d2resource.Font6, true},
-		{labelResLightLine2X, labelResLightLine2Y, "Resistance", d2resource.Font6, true},
+		{labelResLightLine1X, labelResLightLine1Y, lr[0], d2resource.Font6, true},
+		{labelResLightLine2X, labelResLightLine2Y, lr[len(lr)-1], d2resource.Font6, true},
 
-		{labelResPoisLine1X, labelResPoisLine1Y, "Poison", d2resource.Font6, true},
-		{labelResPoisLine2X, labelResPoisLine2Y, "Resistance", d2resource.Font6, true},
+		{labelResPoisLine1X, labelResPoisLine1Y, pr[0], d2resource.Font6, true},
+		{labelResPoisLine2X, labelResPoisLine2Y, pr[len(pr)-1], d2resource.Font6, true},
 	}
 
 	for _, cfg := range staticLabelConfigs {
@@ -295,7 +290,7 @@ func (s *HeroStatsPanel) renderStaticLabels(target d2interface.Surface) {
 			cfg.centerAlign,
 		})
 
-		label.RenderNoError(target)
+		label.Render(target)
 	}
 }
 
@@ -325,30 +320,24 @@ func (s *HeroStatsPanel) initStatValueLabels() {
 	}
 }
 
-func (s *HeroStatsPanel) renderStatValues(target d2interface.Surface) {
-	s.renderStatValueNum(s.labels.Level, s.heroState.Level, target)
-	s.renderStatValueNum(s.labels.Experience, s.heroState.Experience, target)
-	s.renderStatValueNum(s.labels.NextLevelExp, s.heroState.NextLevelExp, target)
+func (s *HeroStatsPanel) setStatValues() {
+	s.labels.Level.SetText(strconv.Itoa(s.heroState.Level))
+	s.labels.Experience.SetText(strconv.Itoa(s.heroState.Experience))
+	s.labels.NextLevelExp.SetText(strconv.Itoa(s.heroState.NextLevelExp))
 
-	s.renderStatValueNum(s.labels.Strength, s.heroState.Strength, target)
-	s.renderStatValueNum(s.labels.Dexterity, s.heroState.Dexterity, target)
-	s.renderStatValueNum(s.labels.Vitality, s.heroState.Vitality, target)
-	s.renderStatValueNum(s.labels.Energy, s.heroState.Energy, target)
+	s.labels.Strength.SetText(strconv.Itoa(s.heroState.Strength))
+	s.labels.Dexterity.SetText(strconv.Itoa(s.heroState.Dexterity))
+	s.labels.Vitality.SetText(strconv.Itoa(s.heroState.Vitality))
+	s.labels.Energy.SetText(strconv.Itoa(s.heroState.Energy))
 
-	s.renderStatValueNum(s.labels.MaxHealth, s.heroState.MaxHealth, target)
-	s.renderStatValueNum(s.labels.Health, s.heroState.Health, target)
+	s.labels.MaxHealth.SetText(strconv.Itoa(s.heroState.MaxHealth))
+	s.labels.Health.SetText(strconv.Itoa(s.heroState.Health))
 
-	s.renderStatValueNum(s.labels.MaxStamina, s.heroState.MaxStamina, target)
-	s.renderStatValueNum(s.labels.Stamina, int(s.heroState.Stamina), target)
+	s.labels.MaxStamina.SetText(strconv.Itoa(s.heroState.MaxStamina))
+	s.labels.Stamina.SetText(strconv.Itoa(int(s.heroState.Stamina)))
 
-	s.renderStatValueNum(s.labels.MaxMana, s.heroState.MaxMana, target)
-	s.renderStatValueNum(s.labels.Mana, s.heroState.Mana, target)
-}
-
-func (s *HeroStatsPanel) renderStatValueNum(label *d2ui.Label, value int,
-	target d2interface.Surface) {
-	label.SetText(strconv.Itoa(value))
-	label.RenderNoError(target)
+	s.labels.MaxMana.SetText(strconv.Itoa(s.heroState.MaxMana))
+	s.labels.Mana.SetText(strconv.Itoa(s.heroState.Mana))
 }
 
 func (s *HeroStatsPanel) createStatValueLabel(stat, x, y int) *d2ui.Label {
@@ -359,11 +348,12 @@ func (s *HeroStatsPanel) createStatValueLabel(stat, x, y int) *d2ui.Label {
 func (s *HeroStatsPanel) createTextLabel(element PanelText) *d2ui.Label {
 	label := s.uiManager.NewLabel(element.Font, d2resource.PaletteStatic)
 	if element.AlignCenter {
-		label.Alignment = d2gui.HorizontalAlignCenter
+		label.Alignment = d2ui.HorizontalAlignCenter
 	}
 
 	label.SetText(element.Text)
 	label.SetPosition(element.X, element.Y)
+	s.panelGroup.AddWidget(label)
 
 	return label
 }

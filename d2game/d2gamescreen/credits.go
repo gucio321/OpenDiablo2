@@ -2,8 +2,6 @@ package d2gamescreen
 
 import (
 	"bufio"
-	"fmt"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -29,6 +27,30 @@ type labelItem struct {
 	Available bool
 }
 
+// CreateCredits creates an instance of the credits screen
+func CreateCredits(navigator d2interface.Navigator,
+	asset *d2asset.AssetManager,
+	renderer d2interface.Renderer,
+	l d2util.LogLevel,
+	ui *d2ui.UIManager) *Credits {
+	credits := &Credits{
+		asset:              asset,
+		labels:             make([]*labelItem, 0),
+		cycleTime:          0,
+		doneWithCredits:    false,
+		cyclesTillNextLine: 0,
+		renderer:           renderer,
+		navigator:          navigator,
+		uiManager:          ui,
+	}
+
+	credits.Logger = d2util.NewLogger()
+	credits.Logger.SetLevel(l)
+	credits.Logger.SetPrefix(logPrefix)
+
+	return credits
+}
+
 // Credits represents the credits screen
 type Credits struct {
 	creditsBackground  *d2ui.Sprite
@@ -43,36 +65,21 @@ type Credits struct {
 	renderer  d2interface.Renderer
 	navigator d2interface.Navigator
 	uiManager *d2ui.UIManager
-}
 
-// CreateCredits creates an instance of the credits screen
-func CreateCredits(navigator d2interface.Navigator, asset *d2asset.AssetManager, renderer d2interface.Renderer,
-	ui *d2ui.UIManager) *Credits {
-	result := &Credits{
-		asset:              asset,
-		labels:             make([]*labelItem, 0),
-		cycleTime:          0,
-		doneWithCredits:    false,
-		cyclesTillNextLine: 0,
-		renderer:           renderer,
-		navigator:          navigator,
-		uiManager:          ui,
-	}
-
-	return result
+	*d2util.Logger
 }
 
 // LoadContributors loads the contributors data from file
 func (v *Credits) LoadContributors() []string {
 	file, err := os.Open(path.Join("./", "CONTRIBUTORS"))
 	if err != nil || file == nil {
-		log.Print("CONTRIBUTORS file is missing")
+		v.Warning("CONTRIBUTORS file is missing")
 		return []string{"MISSING CONTRIBUTOR FILES!"}
 	}
 
 	defer func() {
 		if err = file.Close(); err != nil {
-			fmt.Printf("an error occurred while closing file: %s, err: %q\n", file.Name(), err)
+			v.Errorf("an error occurred while closing file: %s, err: %e", file.Name(), err)
 		}
 	}()
 
@@ -92,7 +99,7 @@ func (v *Credits) OnLoad(loading d2screen.LoadingState) {
 
 	v.creditsBackground, err = v.uiManager.NewSprite(d2resource.CreditsBackground, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.creditsBackground.SetPosition(creditsX, creditsY)
@@ -113,7 +120,7 @@ func (v *Credits) OnLoad(loading d2screen.LoadingState) {
 
 	creditData, err := d2util.Utf16BytesToString(fileData[2:])
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.creditsText = strings.Split(creditData, "\r\n")
@@ -129,17 +136,14 @@ func (v *Credits) OnLoad(loading d2screen.LoadingState) {
 
 // Render renders the credits screen
 func (v *Credits) Render(screen d2interface.Surface) {
-	err := v.creditsBackground.RenderSegmented(screen, 4, 3, 0)
-	if err != nil {
-		return
-	}
+	v.creditsBackground.RenderSegmented(screen, 4, 3, 0)
 
 	for _, label := range v.labels {
 		if label.Available {
 			continue
 		}
 
-		label.Label.RenderNoError(screen)
+		label.Label.Render(screen)
 	}
 }
 

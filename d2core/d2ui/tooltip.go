@@ -5,7 +5,6 @@ import (
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 )
 
 const (
@@ -56,9 +55,10 @@ func (ui *UIManager) NewTooltip(font,
 	originX tooltipXOrigin,
 	originY tooltipYOrigin) *Tooltip {
 	label := ui.NewLabel(font, palette)
-	label.Alignment = d2gui.HorizontalAlignCenter
+	label.Alignment = HorizontalAlignCenter
 
 	base := NewBaseWidget(ui)
+	base.SetVisible(false)
 
 	res := &Tooltip{
 		BaseWidget:      base,
@@ -69,6 +69,7 @@ func (ui *UIManager) NewTooltip(font,
 		boxEnabled:      true,
 	}
 	res.manager = ui
+	ui.addTooltip(res)
 
 	return res
 }
@@ -140,7 +141,7 @@ func (t *Tooltip) GetSize() (sx, sy int) {
 }
 
 // Render draws the tooltip
-func (t *Tooltip) Render(target d2interface.Surface) error {
+func (t *Tooltip) Render(target d2interface.Surface) {
 	maxW, maxH := t.GetSize()
 
 	// nolint:gomnd // no magic numbers, their meaning is obvious
@@ -187,13 +188,11 @@ func (t *Tooltip) Render(target d2interface.Surface) error {
 	for i := range t.lines {
 		t.label.SetText(t.lines[i])
 		_, h := t.label.GetTextMetrics(t.lines[i])
-		t.label.RenderNoError(target)
+		t.label.Render(target)
 		target.PushTranslation(0, h)
 	}
 
 	target.PopN(len(t.lines))
-
-	return nil
 }
 
 // Advance is a no-op

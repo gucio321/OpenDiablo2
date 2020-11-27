@@ -10,7 +10,6 @@ import (
 	"image"
 	"image/gif"
 	"image/png"
-	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -66,6 +65,8 @@ type App struct {
 	captureFrames     []*image.RGBA
 	gitBranch         string
 	gitCommit         string
+	language          string
+	charset           string
 	asset             *d2asset.AssetManager
 	inputManager      d2interface.InputManager
 	terminal          d2interface.Terminal
@@ -77,8 +78,8 @@ type App struct {
 	tAllocSamples     *ring.Ring
 	guiManager        *d2gui.GuiManager
 	config            *d2config.Configuration
-	logger            *d2util.Logger
-	errorMessage      error
+	*d2util.Logger
+	errorMessage error
 	*Options
 }
 
@@ -110,20 +111,22 @@ const (
 // Create creates a new instance of the application
 func Create(gitBranch, gitCommit string) *App {
 	assetManager, assetError := d2asset.NewAssetManager()
-	logger := d2util.NewLogger()
-	logger.SetPrefix(appLoggerPrefix)
-	logger.SetLevel(d2util.LogLevelNone)
 
-	return &App{
+	app := &App{
 		gitBranch: gitBranch,
 		gitCommit: gitCommit,
 		asset:     assetManager,
 		Options: &Options{
 			Server: &d2networking.ServerOptions{},
 		},
-		logger:       logger,
 		errorMessage: assetError,
 	}
+
+	app.Logger = d2util.NewLogger()
+	app.Logger.SetPrefix(appLoggerPrefix)
+	app.Logger.SetLevel(d2util.LogLevelNone)
+
+	return app
 }
 
 func updateNOOP() error {
@@ -137,7 +140,7 @@ func (a *App) startDedicatedServer() error {
 	srvChanIn := make(chan int)
 	srvChanLog := make(chan string)
 
-	srvErr := d2networking.StartDedicatedServer(a.asset, srvChanIn, srvChanLog, maxPlayers)
+	srvErr := d2networking.StartDedicatedServer(a.asset, srvChanIn, srvChanLog, a.config.LogLevel, maxPlayers)
 	if srvErr != nil {
 		return srvErr
 	}
@@ -152,7 +155,7 @@ func (a *App) startDedicatedServer() error {
 
 	for {
 		for data := range srvChanLog {
-			log.Println(data)
+			a.Info(data)
 		}
 	}
 }
@@ -178,7 +181,7 @@ func (a *App) loadEngine() error {
 
 	a.asset.SetLogLevel(logLevel)
 
-	audio := ebiten2.CreateAudio(a.asset)
+	audio := ebiten2.CreateAudio(a.config.LogLevel, a.asset)
 
 	inputManager := d2input.NewInputManager()
 
@@ -194,7 +197,7 @@ func (a *App) loadEngine() error {
 
 	scriptEngine := d2script.CreateScriptEngine()
 
-	uiManager := d2ui.NewUIManager(a.asset, renderer, inputManager, audio)
+	uiManager := d2ui.NewUIManager(a.asset, renderer, inputManager, a.config.LogLevel, audio)
 
 	a.inputManager = inputManager
 	a.terminal = term
@@ -265,7 +268,7 @@ func (a *App) LoadConfig() (*d2config.Configuration, error) {
 		fullPath := filepath.Join(config.Dir(), config.Base())
 		config.SetPath(fullPath)
 
-		a.logger.Infof("creating default configuration file at %s...", fullPath)
+		a.Infof("creating default configuration file at %s...", fullPath)
 
 		saveErr := config.Save()
 
@@ -278,7 +281,7 @@ func (a *App) LoadConfig() (*d2config.Configuration, error) {
 
 	config.SetPath(filepath.Join(configAsset.Source().Path(), configAsset.Path()))
 
-	a.logger.Infof("loaded configuration file from %s", config.Path())
+	a.Infof("loaded configuration file from %s", config.Path())
 
 	return config, nil
 }
@@ -325,7 +328,7 @@ func (a *App) Run() error {
 
 	// start profiler if argument was supplied
 	if len(*a.Options.profiler) > 0 {
-		profiler := enableProfiler(*a.Options.profiler)
+		profiler := enableProfiler(*a.Options.profiler, a)
 		if profiler != nil {
 			defer profiler.Stop()
 		}
@@ -373,6 +376,8 @@ func (a *App) initialize() error {
 		return err
 	}
 
+	a.initLanguage()
+
 	if err := a.initDataDictionaries(); err != nil {
 		return err
 	}
@@ -402,18 +407,18 @@ func (a *App) initialize() error {
 		action := &terminalActions[idx]
 
 		if err := a.terminal.BindAction(action.name, action.description, action.action); err != nil {
-			log.Fatal(err)
+			a.Fatal(err.Error())
 		}
 	}
 
-	gui, err := d2gui.CreateGuiManager(a.asset, a.inputManager)
+	gui, err := d2gui.CreateGuiManager(a.asset, a.config.LogLevel, a.inputManager)
 	if err != nil {
 		return err
 	}
 
 	a.guiManager = gui
 
-	a.screen = d2screen.NewScreenManager(a.ui, a.guiManager)
+	a.screen = d2screen.NewScreenManager(a.ui, a.config.LogLevel, a.guiManager)
 
 	a.audio.SetVolumes(a.config.BgmVolume, a.config.SfxVolume)
 
@@ -454,6 +459,14 @@ func (a *App) initConfig(config *d2config.Configuration) error {
 	return nil
 }
 
+func (a *App) initLanguage() {
+	a.language = a.asset.LoadLanguage(d2resource.LocalLanguage)
+	a.asset.Loader.SetLanguage(&a.language)
+
+	a.charset = d2resource.GetFontCharset(a.language)
+	a.asset.Loader.SetCharset(&a.charset)
+}
+
 func (a *App) initDataDictionaries() error {
 	dictPaths := []string{
 		d2resource.LevelType, d2resource.LevelPreset, d2resource.LevelWarp,
@@ -486,7 +499,7 @@ func (a *App) initDataDictionaries() error {
 		d2resource.LowQualityItems,
 	}
 
-	a.logger.Info("Initializing asset manager")
+	a.Info("Initializing asset manager")
 
 	for _, path := range dictPaths {
 		err := a.asset.LoadRecords(path)
@@ -513,11 +526,11 @@ func (a *App) initAnimationData(path string) error {
 		return err
 	}
 
-	a.logger.Debug(fmt.Sprintf(fmtLoadAnimData, path))
+	a.Debugf(fmtLoadAnimData, path)
 
 	animData := d2data.LoadAnimationData(animDataBytes)
 
-	a.logger.Infof("Loaded %d animation data records", len(animData))
+	a.Infof("Loaded %d animation data records", len(animData))
 
 	a.asset.Records.Animation.Data = animData
 
@@ -672,21 +685,21 @@ func (a *App) allocRate(totalAlloc uint64, fps float64) float64 {
 func (a *App) dumpHeap() {
 	if _, err := os.Stat("./pprof/"); os.IsNotExist(err) {
 		if err := os.Mkdir("./pprof/", 0750); err != nil {
-			log.Fatal(err)
+			a.Fatal(err.Error())
 		}
 	}
 
 	fileOut, err := os.Create("./pprof/heap.pprof")
 	if err != nil {
-		log.Print(err)
+		a.Error(err.Error())
 	}
 
 	if err := pprof.WriteHeapProfile(fileOut); err != nil {
-		log.Fatal(err)
+		a.Fatal(err.Error())
 	}
 
 	if err := fileOut.Close(); err != nil {
-		log.Fatal(err)
+		a.Fatal(err.Error())
 	}
 }
 
@@ -697,7 +710,7 @@ func (a *App) evalJS(code string) {
 		return
 	}
 
-	log.Printf("%s", val)
+	a.Info("%s" + val)
 }
 
 func (a *App) toggleFullScreen() {
@@ -720,7 +733,7 @@ func (a *App) doCaptureFrame(target d2interface.Surface) error {
 
 	defer func() {
 		if err := fp.Close(); err != nil {
-			log.Fatal(err)
+			a.Fatal(err.Error())
 		}
 	}()
 
@@ -729,7 +742,7 @@ func (a *App) doCaptureFrame(target d2interface.Surface) error {
 		return err
 	}
 
-	log.Printf("saved frame to %s", a.capturePath)
+	a.Info(fmt.Sprintf("saved frame to %s", a.capturePath))
 
 	return nil
 }
@@ -747,7 +760,7 @@ func (a *App) convertFramesToGif() error {
 
 	defer func() {
 		if err := fp.Close(); err != nil {
-			log.Fatal(err)
+			a.Fatal(err.Error())
 		}
 	}()
 
@@ -789,7 +802,7 @@ func (a *App) convertFramesToGif() error {
 		return err
 	}
 
-	log.Printf("saved animation to %s", a.capturePath)
+	a.Info(fmt.Sprintf("saved animation to %s", a.capturePath))
 
 	return nil
 }
@@ -829,7 +842,7 @@ func (a *App) quitGame() {
 }
 
 func (a *App) enterGuiPlayground() {
-	a.screen.SetNextScreen(d2gamescreen.CreateGuiTestMain(a.renderer, a.guiManager, a.asset))
+	a.screen.SetNextScreen(d2gamescreen.CreateGuiTestMain(a.renderer, a.guiManager, a.config.LogLevel, a.asset))
 }
 
 func createZeroedRing(n int) *ring.Ring {
@@ -842,36 +855,36 @@ func createZeroedRing(n int) *ring.Ring {
 	return r
 }
 
-func enableProfiler(profileOption string) interface{ Stop() } {
+func enableProfiler(profileOption string, a *App) interface{ Stop() } {
 	var options []func(*profile.Profile)
 
 	switch strings.ToLower(strings.Trim(profileOption, " ")) {
 	case "cpu":
-		log.Printf("CPU profiling is enabled.")
+		a.Logger.Debug("CPU profiling is enabled.")
 
 		options = append(options, profile.CPUProfile)
 	case "mem":
-		log.Printf("Memory profiling is enabled.")
+		a.Logger.Debug("Memory profiling is enabled.")
 
 		options = append(options, profile.MemProfile)
 	case "block":
-		log.Printf("Block profiling is enabled.")
+		a.Logger.Debug("Block profiling is enabled.")
 
 		options = append(options, profile.BlockProfile)
 	case "goroutine":
-		log.Printf("Goroutine profiling is enabled.")
+		a.Logger.Debug("Goroutine profiling is enabled.")
 
 		options = append(options, profile.GoroutineProfile)
 	case "trace":
-		log.Printf("Trace profiling is enabled.")
+		a.Logger.Debug("Trace profiling is enabled.")
 
 		options = append(options, profile.TraceProfile)
 	case "thread":
-		log.Printf("Thread creation profiling is enabled.")
+		a.Logger.Debug("Thread creation profiling is enabled.")
 
 		options = append(options, profile.ThreadcreationProfile)
 	case "mutex":
-		log.Printf("Mutex profiling is enabled.")
+		a.Logger.Debug("Mutex profiling is enabled.")
 
 		options = append(options, profile.MutexProfile)
 	}
@@ -897,9 +910,10 @@ func (a *App) updateInitError(target d2interface.Surface) error {
 func (a *App) ToMainMenu(errorMessageOptional ...string) {
 	buildInfo := d2gamescreen.BuildInfo{Branch: a.gitBranch, Commit: a.gitCommit}
 
-	mainMenu, err := d2gamescreen.CreateMainMenu(a, a.asset, a.renderer, a.inputManager, a.audio, a.ui, buildInfo, errorMessageOptional...)
+	mainMenu, err := d2gamescreen.CreateMainMenu(a, a.asset, a.renderer, a.inputManager, a.audio, a.ui, buildInfo,
+		a.config.LogLevel, errorMessageOptional...)
 	if err != nil {
-		log.Print(err)
+		a.Error(err.Error())
 		return
 	}
 
@@ -908,9 +922,9 @@ func (a *App) ToMainMenu(errorMessageOptional ...string) {
 
 // ToSelectHero forces the game to transition to the Select Hero (create character) screen
 func (a *App) ToSelectHero(connType d2clientconnectiontype.ClientConnectionType, host string) {
-	selectHero, err := d2gamescreen.CreateSelectHeroClass(a, a.asset, a.renderer, a.audio, a.ui, connType, host)
+	selectHero, err := d2gamescreen.CreateSelectHeroClass(a, a.asset, a.renderer, a.audio, a.ui, connType, a.config.LogLevel, host)
 	if err != nil {
-		log.Print(err)
+		a.Error(err.Error())
 		return
 	}
 
@@ -919,9 +933,9 @@ func (a *App) ToSelectHero(connType d2clientconnectiontype.ClientConnectionType,
 
 // ToCreateGame forces the game to transition to the Create Game screen
 func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.ClientConnectionType, host string) {
-	gameClient, err := d2client.Create(connType, a.asset, a.scriptEngine)
+	gameClient, err := d2client.Create(connType, a.asset, a.config.LogLevel, a.scriptEngine)
 	if err != nil {
-		log.Print(err)
+		a.Error(err.Error())
 	}
 
 	if err = gameClient.Open(host, filePath); err != nil {
@@ -930,7 +944,7 @@ func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.Clie
 		a.ToMainMenu(errorMessage)
 	} else {
 		a.screen.SetNextScreen(d2gamescreen.CreateGame(
-			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, a.guiManager,
+			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, a.config.LogLevel, a.guiManager,
 		))
 	}
 }
@@ -938,7 +952,7 @@ func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.Clie
 // ToCharacterSelect forces the game to transition to the Character Select (load character) screen
 func (a *App) ToCharacterSelect(connType d2clientconnectiontype.ClientConnectionType, connHost string) {
 	characterSelect, err := d2gamescreen.CreateCharacterSelect(a, a.asset, a.renderer, a.inputManager,
-		a.audio, a.ui, connType, connHost)
+		a.audio, a.ui, connType, a.config.LogLevel, connHost)
 	if err != nil {
 		fmt.Printf("unable to create character select screen: %s", err)
 	}
@@ -948,9 +962,10 @@ func (a *App) ToCharacterSelect(connType d2clientconnectiontype.ClientConnection
 
 // ToMapEngineTest forces the game to transition to the map engine test screen
 func (a *App) ToMapEngineTest(region, level int) {
-	met, err := d2gamescreen.CreateMapEngineTest(region, level, a.asset, a.terminal, a.renderer, a.inputManager, a.audio, a.screen)
+	met, err := d2gamescreen.CreateMapEngineTest(region, level, a.asset, a.terminal, a.renderer, a.inputManager, a.audio,
+		a.config.LogLevel, a.screen)
 	if err != nil {
-		log.Print(err)
+		a.Error(err.Error())
 		return
 	}
 
@@ -959,10 +974,10 @@ func (a *App) ToMapEngineTest(region, level int) {
 
 // ToCredits forces the game to transition to the credits screen
 func (a *App) ToCredits() {
-	a.screen.SetNextScreen(d2gamescreen.CreateCredits(a, a.asset, a.renderer, a.ui))
+	a.screen.SetNextScreen(d2gamescreen.CreateCredits(a, a.asset, a.renderer, a.config.LogLevel, a.ui))
 }
 
 // ToCinematics forces the game to transition to the cinematics menu
 func (a *App) ToCinematics() {
-	a.screen.SetNextScreen(d2gamescreen.CreateCinematics(a, a.asset, a.renderer, a.audio, a.ui))
+	a.screen.SetNextScreen(d2gamescreen.CreateCinematics(a, a.asset, a.renderer, a.audio, a.config.LogLevel, a.ui))
 }

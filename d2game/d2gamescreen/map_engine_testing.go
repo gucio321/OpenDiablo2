@@ -2,7 +2,6 @@ package d2gamescreen
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2math/d2vector"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapengine"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2map/d2mapgen"
@@ -87,6 +87,47 @@ func getRegions() []regionSpec {
 	}
 }
 
+// CreateMapEngineTest creates the Map Engine Test screen and returns a pointer to it
+func CreateMapEngineTest(currentRegion,
+	levelPreset int,
+	asset *d2asset.AssetManager,
+	term d2interface.Terminal,
+	renderer d2interface.Renderer,
+	inputManager d2interface.InputManager,
+	audioProvider d2interface.AudioProvider,
+	l d2util.LogLevel,
+	screen *d2screen.ScreenManager,
+) (*MapEngineTest, error) {
+	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
+	if err != nil {
+		return nil, err
+	}
+
+	mapEngineTest := &MapEngineTest{
+		currentRegion:      currentRegion,
+		levelPreset:        levelPreset,
+		fileIndex:          0,
+		regionSpec:         regionSpec{},
+		filesCount:         0,
+		asset:              asset,
+		terminal:           term,
+		renderer:           renderer,
+		inputManager:       inputManager,
+		audioProvider:      audioProvider,
+		screen:             screen,
+		playerStateFactory: heroStateFactory,
+		logLevel:           l,
+	}
+
+	mapEngineTest.playerState = heroStateFactory.CreateTestGameState()
+
+	mapEngineTest.Logger = d2util.NewLogger()
+	mapEngineTest.Logger.SetLevel(l)
+	mapEngineTest.Logger.SetPrefix(logPrefix)
+
+	return mapEngineTest, nil
+}
+
 // MapEngineTest represents the MapEngineTest screen
 type MapEngineTest struct {
 	asset              *d2asset.AssetManager
@@ -111,45 +152,13 @@ type MapEngineTest struct {
 	fileIndex     int
 	regionSpec    regionSpec
 	filesCount    int
-}
 
-// CreateMapEngineTest creates the Map Engine Test screen and returns a pointer to it
-func CreateMapEngineTest(currentRegion,
-	levelPreset int,
-	asset *d2asset.AssetManager,
-	term d2interface.Terminal,
-	renderer d2interface.Renderer,
-	inputManager d2interface.InputManager,
-	audioProvider d2interface.AudioProvider,
-	screen *d2screen.ScreenManager,
-) (*MapEngineTest, error) {
-	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &MapEngineTest{
-		currentRegion:      currentRegion,
-		levelPreset:        levelPreset,
-		fileIndex:          0,
-		regionSpec:         regionSpec{},
-		filesCount:         0,
-		asset:              asset,
-		terminal:           term,
-		renderer:           renderer,
-		inputManager:       inputManager,
-		audioProvider:      audioProvider,
-		screen:             screen,
-		playerStateFactory: heroStateFactory,
-	}
-
-	result.playerState = heroStateFactory.CreateTestGameState()
-
-	return result, nil
+	*d2util.Logger
+	logLevel d2util.LogLevel
 }
 
 func (met *MapEngineTest) loadRegionByIndex(n, levelPreset, fileIndex int) {
-	log.Printf("Loaded region: Type(%d) LevelPreset(%d) FileIndex(%d)", n, levelPreset, fileIndex)
+	met.Infof("Loaded region: Type(%d) LevelPreset(%d) FileIndex(%d)", n, levelPreset, fileIndex)
 	met.mapRenderer.InvalidateImageCache()
 
 	for _, spec := range getRegions() {
@@ -180,14 +189,14 @@ func (met *MapEngineTest) loadRegionByIndex(n, levelPreset, fileIndex int) {
 		met.levelPreset = levelPreset
 	}
 
-	mapGen, _ := d2mapgen.NewMapGenerator(met.asset, met.mapEngine)
+	mapGen, _ := d2mapgen.NewMapGenerator(met.asset, met.logLevel, met.mapEngine)
 	met.mapGen = mapGen
 
 	if n == 0 {
 		met.mapEngine.SetSeed(time.Now().UnixNano())
 		met.mapGen.GenerateAct1Overworld()
 	} else {
-		met.mapEngine = d2mapengine.CreateMapEngine(met.asset) // necessary for map name update
+		met.mapEngine = d2mapengine.CreateMapEngine(met.logLevel, met.asset) // necessary for map name update
 		met.mapEngine.SetSeed(time.Now().UnixNano())
 		met.mapEngine.GenerateMap(d2enum.RegionIdType(n), levelPreset, fileIndex)
 	}
@@ -204,17 +213,17 @@ func (met *MapEngineTest) loadRegionByIndex(n, levelPreset, fileIndex int) {
 // OnLoad loads the resources for the Map Engine Test screen
 func (met *MapEngineTest) OnLoad(loading d2screen.LoadingState) {
 	if err := met.inputManager.BindHandler(met); err != nil {
-		fmt.Printf("could not add MapEngineTest as event handler")
+		met.Error("could not add MapEngineTest as event handler")
 	}
 
 	loading.Progress(twentyPercent)
 
-	met.mapEngine = d2mapengine.CreateMapEngine(met.asset)
+	met.mapEngine = d2mapengine.CreateMapEngine(met.logLevel, met.asset)
 
 	loading.Progress(fiftyPercent)
 
 	met.mapRenderer = d2maprenderer.CreateMapRenderer(met.asset, met.renderer, met.mapEngine,
-		met.terminal, 0.0, 0.0)
+		met.terminal, met.logLevel, 0.0, 0.0)
 
 	loading.Progress(seventyPercent)
 	met.loadRegionByIndex(met.currentRegion, met.levelPreset, met.fileIndex)

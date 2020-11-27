@@ -1,8 +1,6 @@
 package d2ui
 
 import (
-	"log"
-
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
@@ -32,7 +30,7 @@ type UIFrame struct {
 const (
 	leftFrameTopLeft = iota
 	leftFrameTopRight
-	leftFrameMiddleRight
+	leftFrameMiddleLeft
 	leftFrameBottomLeft
 	leftFrameBottomRight
 	rightFrameTopLeft
@@ -69,6 +67,8 @@ func NewUIFrame(
 	}
 	frame.Load()
 
+	frame.asset.Logger.SetPrefix(logPrefix) // workaround
+
 	return frame
 }
 
@@ -76,22 +76,69 @@ func NewUIFrame(
 func (u *UIFrame) Load() {
 	sprite, err := u.manager.NewSprite(d2resource.Frame, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		u.asset.Logger.Error(err.Error())
 	}
 
 	u.frame = sprite
+	u.calculateSize()
+}
+
+func (u *UIFrame) calculateSize() {
+	var framesWidth, framesHeight []int
+
+	if u.frameOrientation == FrameLeft {
+		framesWidth = []int{
+			leftFrameTopLeft,
+			leftFrameTopRight,
+		}
+		framesHeight = []int{
+			leftFrameTopLeft,
+			leftFrameMiddleLeft,
+			leftFrameBottomLeft,
+		}
+	} else if u.frameOrientation == FrameRight {
+		framesWidth = []int{
+			rightFrameTopLeft,
+			rightFrameTopRight,
+		}
+		framesHeight = []int{
+			rightFrameTopRight,
+			rightFrameMiddleRight,
+			rightFrameBottomRight,
+		}
+	}
+
+	for i := range framesWidth {
+		w, _, err := u.frame.GetFrameSize(framesWidth[i])
+		if err != nil {
+			u.asset.Logger.Error(err.Error())
+		}
+
+		u.width += w
+	}
+
+	for i := range framesHeight {
+		_, h, err := u.frame.GetFrameSize(framesHeight[i])
+		if err != nil {
+			u.asset.Logger.Error(err.Error())
+		}
+
+		u.height += h
+	}
 }
 
 // Render the frame to the target surface
-func (u *UIFrame) Render(target d2interface.Surface) error {
+func (u *UIFrame) Render(target d2interface.Surface) {
 	switch u.frameOrientation {
 	case FrameLeft:
-		return u.renderLeft(target)
+		if err := u.renderLeft(target); err != nil {
+			u.asset.Logger.Error("Render error" + err.Error())
+		}
 	case FrameRight:
-		return u.renderRight(target)
+		if err := u.renderRight(target); err != nil {
+			u.asset.Logger.Error("Render error" + err.Error())
+		}
 	}
-
-	return nil
 }
 
 func (u *UIFrame) renderLeft(target d2interface.Surface) error {
@@ -99,7 +146,7 @@ func (u *UIFrame) renderLeft(target d2interface.Surface) error {
 	framePieces := []int{
 		leftFrameTopLeft,
 		leftFrameTopRight,
-		leftFrameMiddleRight,
+		leftFrameMiddleLeft,
 		leftFrameBottomLeft,
 		leftFrameBottomRight,
 	}
@@ -127,7 +174,7 @@ func (u *UIFrame) renderLeft(target d2interface.Surface) error {
 		case leftFrameTopRight:
 			c.x, c.y = currentX, startY+height
 			currentX = startX
-		case leftFrameMiddleRight:
+		case leftFrameMiddleLeft:
 			c.x, c.y = currentX, currentY+height
 			currentY += height
 		case leftFrameBottomLeft:
@@ -227,7 +274,7 @@ func (u *UIFrame) renderFramePiece(sfc d2interface.Surface, x, y, idx int) error
 
 	u.frame.SetPosition(x, y)
 
-	u.frame.RenderNoError(sfc)
+	u.frame.Render(sfc)
 
 	return nil
 }

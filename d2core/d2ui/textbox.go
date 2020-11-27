@@ -1,7 +1,6 @@
 package d2ui
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -29,7 +28,7 @@ type TextBox struct {
 func (ui *UIManager) NewTextbox() *TextBox {
 	bgSprite, err := ui.NewSprite(d2resource.TextBox2, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		ui.Error(err.Error())
 		return nil
 	}
 
@@ -56,19 +55,17 @@ func (v *TextBox) SetFilter(filter string) {
 }
 
 // Render renders the text box
-func (v *TextBox) Render(target d2interface.Surface) error {
+func (v *TextBox) Render(target d2interface.Surface) {
 	if !v.visible {
-		return nil
+		return
 	}
 
-	v.bgSprite.RenderNoError(target)
-	v.textLabel.RenderNoError(target)
+	v.bgSprite.Render(target)
+	v.textLabel.Render(target)
 
 	if (time.Now().UnixNano()/1e6)&(1<<8) > 0 {
-		v.lineBar.RenderNoError(target)
+		v.lineBar.Render(target)
 	}
-
-	return nil
 }
 
 // OnKeyChars handles key character events

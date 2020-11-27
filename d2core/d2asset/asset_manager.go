@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2records"
@@ -34,6 +35,7 @@ const (
 )
 
 const (
+	defaultLanguage    = "ENG"
 	logPrefix          = "Asset Manager"
 	fmtLoadAsset       = "could not load file stream %s (%v)"
 	fmtLoadAnimation   = "loading animation %s with palette %s, draw effect %d"
@@ -106,6 +108,23 @@ func (am *AssetManager) FileExists(filePath string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// LoadLanguage loads language from resource path
+func (am *AssetManager) LoadLanguage(languagePath string) string {
+	languageByte, err := am.LoadFile(languagePath)
+	if err != nil {
+		am.Debugf("Unable to load language file: %s", err)
+		return defaultLanguage
+	}
+
+	languageCode := languageByte[0]
+	am.Debugf("Language code: %#02x", languageCode)
+
+	language := d2resource.GetLanguageLiteral(languageCode)
+	am.Infof("Language: %s", language)
+
+	return language
 }
 
 // LoadAnimation loads an Animation by its resource path and its palette path
@@ -267,10 +286,34 @@ func (am *AssetManager) TranslateString(key string) string {
 			return value
 		}
 	}
-
 	// Fix to allow v.setDescLabels("#123") to be bypassed for a patch in issue #360. Reenable later.
 	// log.Panicf("Could not find a string for the key '%s'", key)
 	return key
+}
+
+// TranslateHeroClass translates her class given to game locale
+func (am *AssetManager) TranslateHeroClass(h d2enum.Hero) string {
+	switch h {
+	case d2enum.HeroBarbarian:
+		return am.TranslateString("Barbarian")
+	case d2enum.HeroNecromancer:
+		return am.TranslateString("Necromancer")
+	case d2enum.HeroPaladin:
+		return am.TranslateString("Paladin")
+	case d2enum.HeroAssassin:
+		return am.TranslateString("Assassin")
+	case d2enum.HeroSorceress:
+		return am.TranslateString("Sorceress")
+	case d2enum.HeroAmazon:
+		return am.TranslateString("Amazon")
+	case d2enum.HeroDruid:
+		return am.TranslateString("Druid")
+	default:
+		am.Error("Unknown Hero Class")
+	}
+
+	// should not be reached
+	return "---"
 }
 
 // LoadPaletteTransform loads a palette transform file

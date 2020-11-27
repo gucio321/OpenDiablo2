@@ -3,7 +3,7 @@ package d2gamescreen
 
 import (
 	"fmt"
-	"log"
+	"net"
 	"os"
 	"os/exec"
 	"runtime"
@@ -13,8 +13,8 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2screen"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2networking/d2client/d2clientconnectiontype"
@@ -83,9 +83,10 @@ const (
 	multiplayerBtnX, multiplayerBtnY         = 264, 330
 	tcpNetBtnX, tcpNetBtnY                   = 264, 280
 	networkCancelBtnX, networkCancelBtnY     = 264, 540
-	tcpHostBtnX, tcpHostBtnY                 = 264, 280
-	tcpJoinBtnX, tcpJoinBtnY                 = 264, 320
+	tcpHostBtnX, tcpHostBtnY                 = 264, 200
+	tcpJoinBtnX, tcpJoinBtnY                 = 264, 240
 	errorLabelX, errorLabelY                 = 400, 250
+	machineIPX, machineIPY                   = 400, 90
 )
 
 const (
@@ -99,9 +100,55 @@ const (
 	joinGameCharacterFilter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890._:"
 )
 
+const (
+	logPrefix = "Game Screen"
+)
+
 // BuildInfo contains information about the current build
 type BuildInfo struct {
 	Branch, Commit string
+}
+
+// CreateMainMenu creates an instance of MainMenu
+func CreateMainMenu(
+	navigator d2interface.Navigator,
+	asset *d2asset.AssetManager,
+	renderer d2interface.Renderer,
+	inputManager d2interface.InputManager,
+	audioProvider d2interface.AudioProvider,
+	ui *d2ui.UIManager,
+	buildInfo BuildInfo,
+	l d2util.LogLevel,
+	errorMessageOptional ...string,
+) (*MainMenu, error) {
+	heroStateFactory, err := d2hero.NewHeroStateFactory(asset)
+	if err != nil {
+		return nil, err
+	}
+
+	mainMenu := &MainMenu{
+		asset:          asset,
+		screenMode:     ScreenModeUnknown,
+		leftButtonHeld: true,
+		renderer:       renderer,
+		inputManager:   inputManager,
+		audioProvider:  audioProvider,
+		navigator:      navigator,
+		buildInfo:      buildInfo,
+		uiManager:      ui,
+		heroState:      heroStateFactory,
+	}
+
+	mainMenu.Logger = d2util.NewLogger()
+	mainMenu.Logger.SetPrefix(logPrefix)
+	mainMenu.Logger.SetLevel(l)
+
+	if len(errorMessageOptional) != 0 {
+		mainMenu.errorLabel = ui.NewLabel(d2resource.FontFormal12, d2resource.PaletteUnits)
+		mainMenu.errorLabel.SetText(errorMessageOptional[0])
+	}
+
+	return mainMenu, nil
 }
 
 // MainMenu represents the main menu
@@ -135,6 +182,7 @@ type MainMenu struct {
 	commitLabel         *d2ui.Label
 	tcpIPOptionsLabel   *d2ui.Label
 	tcpJoinGameLabel    *d2ui.Label
+	machineIP           *d2ui.Label
 	errorLabel          *d2ui.Label
 	tcpJoinGameEntry    *d2ui.TextBox
 	screenMode          mainMenuScreenMode
@@ -150,6 +198,7 @@ type MainMenu struct {
 	heroState     *d2hero.HeroStateFactory
 
 	buildInfo BuildInfo
+
 
 	SubMenu int
 }
@@ -183,12 +232,7 @@ func CreateMainMenu(
 		heroState:      heroStateFactory,
 	}
 
-	if len(errorMessageOptional) != 0 {
-		mainMenu.errorLabel = ui.NewLabel(d2resource.FontFormal12, d2resource.PaletteUnits)
-		mainMenu.errorLabel.SetText(errorMessageOptional[0])
-	}
-
-	return mainMenu, nil
+	*d2util.Logger
 }
 
 // OnLoad is called to load the resources for the main menu
@@ -213,7 +257,7 @@ func (v *MainMenu) OnLoad(loading d2screen.LoadingState) {
 	}
 
 	if err := v.inputManager.BindHandler(v); err != nil {
-		fmt.Println("failed to add main menu as event handler")
+		v.Error("failed to add main menu as event handler")
 	}
 }
 
@@ -222,28 +266,28 @@ func (v *MainMenu) loadBackgroundSprites() {
 
 	v.background, err = v.uiManager.NewSprite(d2resource.GameSelectScreen, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.background.SetPosition(backgroundX, backgroundY)
 
 	v.trademarkBackground, err = v.uiManager.NewSprite(d2resource.TrademarkScreen, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.trademarkBackground.SetPosition(backgroundX, backgroundY)
 
 	v.tcpIPBackground, err = v.uiManager.NewSprite(d2resource.TCPIPBackground, d2resource.PaletteSky)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.tcpIPBackground.SetPosition(backgroundX, backgroundY)
 
 	v.serverIPBackground, err = v.uiManager.NewSprite(d2resource.PopUpOkCancel, d2resource.PaletteFechar)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.serverIPBackground.SetPosition(serverIPbackgroundX, serverIPbackgroundY)
@@ -251,32 +295,32 @@ func (v *MainMenu) loadBackgroundSprites() {
 
 func (v *MainMenu) createLabels(loading d2screen.LoadingState) {
 	v.versionLabel = v.uiManager.NewLabel(d2resource.FontFormal12, d2resource.PaletteStatic)
-	v.versionLabel.Alignment = d2gui.HorizontalAlignRight
+	v.versionLabel.Alignment = d2ui.HorizontalAlignRight
 	v.versionLabel.SetText("OpenDiablo2 - " + v.buildInfo.Branch)
 	v.versionLabel.Color[0] = rgbaColor(white)
 	v.versionLabel.SetPosition(versionLabelX, versionLabelY)
 
 	v.commitLabel = v.uiManager.NewLabel(d2resource.FontFormal10, d2resource.PaletteStatic)
-	v.commitLabel.Alignment = d2gui.HorizontalAlignLeft
+	v.commitLabel.Alignment = d2ui.HorizontalAlignLeft
 	v.commitLabel.SetText(v.buildInfo.Commit)
 	v.commitLabel.Color[0] = rgbaColor(white)
 	v.commitLabel.SetPosition(commitLabelX, commitLabelY)
 
 	v.copyrightLabel = v.uiManager.NewLabel(d2resource.FontFormal12, d2resource.PaletteStatic)
-	v.copyrightLabel.Alignment = d2gui.HorizontalAlignCenter
+	v.copyrightLabel.Alignment = d2ui.HorizontalAlignCenter
 	v.copyrightLabel.SetText("Diablo 2 is © Copyright 2000-2016 Blizzard Entertainment")
 	v.copyrightLabel.Color[0] = rgbaColor(lightBrown)
 	v.copyrightLabel.SetPosition(copyrightX, copyrightY)
 	loading.Progress(thirtyPercent)
 
 	v.copyrightLabel2 = v.uiManager.NewLabel(d2resource.FontFormal12, d2resource.PaletteStatic)
-	v.copyrightLabel2.Alignment = d2gui.HorizontalAlignCenter
+	v.copyrightLabel2.Alignment = d2ui.HorizontalAlignCenter
 	v.copyrightLabel2.SetText("All Rights Reserved.")
 	v.copyrightLabel2.Color[0] = rgbaColor(lightBrown)
 	v.copyrightLabel2.SetPosition(copyright2X, copyright2Y)
 
 	v.openDiabloLabel = v.uiManager.NewLabel(d2resource.FontFormal10, d2resource.PaletteStatic)
-	v.openDiabloLabel.Alignment = d2gui.HorizontalAlignCenter
+	v.openDiabloLabel.Alignment = d2ui.HorizontalAlignCenter
 	v.openDiabloLabel.SetText("OpenDiablo2 is neither developed by, nor endorsed by Blizzard or its parent company Activision")
 	v.openDiabloLabel.Color[0] = rgbaColor(lightYellow)
 	v.openDiabloLabel.SetPosition(od2LabelX, od2LabelY)
@@ -284,21 +328,24 @@ func (v *MainMenu) createLabels(loading d2screen.LoadingState) {
 
 	v.tcpIPOptionsLabel = v.uiManager.NewLabel(d2resource.Font42, d2resource.PaletteUnits)
 	v.tcpIPOptionsLabel.SetPosition(tcpOptionsX, tcpOptionsY)
-	v.tcpIPOptionsLabel.Alignment = d2gui.HorizontalAlignCenter
+	v.tcpIPOptionsLabel.Alignment = d2ui.HorizontalAlignCenter
 	v.tcpIPOptionsLabel.SetText("TCP/IP Options")
 
 	v.tcpJoinGameLabel = v.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteUnits)
-	v.tcpJoinGameLabel.Alignment = d2gui.HorizontalAlignCenter
-
+	v.tcpJoinGameLabel.Alignment = d2ui.HorizontalAlignCenter
 	v.tcpJoinGameLabel.SetText("Enter Host IP Address\nto Join Game")
-
 	v.tcpJoinGameLabel.Color[0] = rgbaColor(gold)
-
 	v.tcpJoinGameLabel.SetPosition(joinGameX, joinGameY)
+
+	v.machineIP = v.uiManager.NewLabel(d2resource.Font24, d2resource.PaletteUnits)
+	v.machineIP.Alignment = d2ui.HorizontalAlignCenter
+	v.machineIP.SetText("Your IP address is:\n" + v.getLocalIP())
+	v.machineIP.Color[0] = rgbaColor(lightYellow)
+	v.machineIP.SetPosition(machineIPX, machineIPY)
 
 	if v.errorLabel != nil {
 		v.errorLabel.SetPosition(errorLabelX, errorLabelY)
-		v.errorLabel.Alignment = d2gui.HorizontalAlignCenter
+		v.errorLabel.Alignment = d2ui.HorizontalAlignCenter
 		v.errorLabel.Color[0] = rgbaColor(red)
 	}
 }
@@ -308,7 +355,7 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoLeft, err = v.uiManager.NewSprite(d2resource.Diablo2LogoFireLeft, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.diabloLogoLeft.SetEffect(d2enum.DrawEffectModulate)
@@ -318,7 +365,7 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoRight, err = v.uiManager.NewSprite(d2resource.Diablo2LogoFireRight, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.diabloLogoRight.SetEffect(d2enum.DrawEffectModulate)
@@ -327,14 +374,14 @@ func (v *MainMenu) createLogos(loading d2screen.LoadingState) {
 
 	v.diabloLogoLeftBack, err = v.uiManager.NewSprite(d2resource.Diablo2LogoBlackLeft, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.diabloLogoLeftBack.SetPosition(diabloLogoX, diabloLogoY)
 
 	v.diabloLogoRightBack, err = v.uiManager.NewSprite(d2resource.Diablo2LogoBlackRight, d2resource.PaletteUnits)
 	if err != nil {
-		log.Print(err)
+		v.Error(err.Error())
 	}
 
 	v.diabloLogoRightBack.SetPosition(diabloLogoX, diabloLogoY)
@@ -439,7 +486,7 @@ func (v *MainMenu) onGithubButtonClicked() {
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		v.Error(err.Error())
 	}
 }
 
@@ -467,56 +514,47 @@ func (v *MainMenu) Render(screen d2interface.Surface) {
 func (v *MainMenu) renderBackgrounds(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeTrademark:
-		if err := v.trademarkBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
-			return
-		}
+		v.trademarkBackground.RenderSegmented(screen, 4, 3, 0)
 	case ScreenModeServerIP:
-		if err := v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
-			return
-		}
-
-		if err := v.serverIPBackground.RenderSegmented(screen, 2, 1, 0); err != nil {
-			return
-		}
+		v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0)
+		v.serverIPBackground.RenderSegmented(screen, 2, 1, 0)
 	case ScreenModeTCPIP:
-		if err := v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0); err != nil {
-			return
-		}
+		v.tcpIPBackground.RenderSegmented(screen, 4, 3, 0)
 	default:
-		if err := v.background.RenderSegmented(screen, 4, 3, 0); err != nil {
-			return
-		}
+		v.background.RenderSegmented(screen, 4, 3, 0)
 	}
 }
 
 func (v *MainMenu) renderLogos(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeTrademark, ScreenModeMainMenu, ScreenModeMultiplayer:
-		v.diabloLogoLeftBack.RenderNoError(screen)
-		v.diabloLogoRightBack.RenderNoError(screen)
-		v.diabloLogoLeft.RenderNoError(screen)
-		v.diabloLogoRight.RenderNoError(screen)
+		v.diabloLogoLeftBack.Render(screen)
+		v.diabloLogoRightBack.Render(screen)
+		v.diabloLogoLeft.Render(screen)
+		v.diabloLogoRight.Render(screen)
 	}
 }
 
 func (v *MainMenu) renderLabels(screen d2interface.Surface) {
 	switch v.screenMode {
 	case ScreenModeServerIP:
-		v.tcpIPOptionsLabel.RenderNoError(screen)
-		v.tcpJoinGameLabel.RenderNoError(screen)
+		v.tcpIPOptionsLabel.Render(screen)
+		v.tcpJoinGameLabel.Render(screen)
+		v.machineIP.Render(screen)
 	case ScreenModeTCPIP:
-		v.tcpIPOptionsLabel.RenderNoError(screen)
+		v.tcpIPOptionsLabel.Render(screen)
+		v.machineIP.Render(screen)
 	case ScreenModeTrademark:
-		v.copyrightLabel.RenderNoError(screen)
-		v.copyrightLabel2.RenderNoError(screen)
+		v.copyrightLabel.Render(screen)
+		v.copyrightLabel2.Render(screen)
 
 		if v.errorLabel != nil {
-			v.errorLabel.RenderNoError(screen)
+			v.errorLabel.Render(screen)
 		}
 	case ScreenModeMainMenu:
-		v.openDiabloLabel.RenderNoError(screen)
-		v.versionLabel.RenderNoError(screen)
-		v.commitLabel.RenderNoError(screen)
+		v.openDiabloLabel.Render(screen)
+		v.versionLabel.Render(screen)
+		v.commitLabel.Render(screen)
 	}
 }
 
@@ -714,6 +752,23 @@ func (v *MainMenu) onBtnTCPIPCancelClicked() {
 func (v *MainMenu) onBtnTCPIPOkClicked() {
 	v.setSubMenuMode(singlePlayerCharacterSelect)
 	v.navigator.ToCharacterSelect(d2clientconnectiontype.LANClient, v.tcpJoinGameEntry.GetText())
+}
+
+// getLocalIP returns local machine IP address
+func (v *MainMenu) getLocalIP() string {
+	// https://stackoverflow.com/a/28862477
+	host, _ := os.Hostname()
+	addrs, _ := net.LookupIP(host)
+
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil {
+			return ipv4.String()
+		}
+	}
+
+	v.Warning("no IPv4 Address could be found")
+
+	return "no IPv4 Address could be found"
 }
 
 func (v *MainMenu) setSubMenuMode(menu int) {

@@ -1,15 +1,12 @@
 package d2ui
 
 import (
-	"fmt"
 	"image"
-	"log"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 )
 
 // ButtonType defines the type of button
@@ -41,7 +38,18 @@ const (
 	ButtonTypeMinipanelQuest     ButtonType = 18
 	ButtonTypeMinipanelMen       ButtonType = 19
 	ButtonTypeSquareClose        ButtonType = 20
-	ButtonTypeSkillTreeTab       ButtonType = 21
+	ButtonTypeSquareOk           ButtonType = 21
+	ButtonTypeSkillTreeTab       ButtonType = 22
+	ButtonTypeMinipanelOpenClose ButtonType = 23
+	ButtonTypeMinipanelParty     ButtonType = 24
+	ButtonTypeBuy                ButtonType = 25
+	ButtonTypeSell               ButtonType = 26
+	ButtonTypeRepair             ButtonType = 27
+	ButtonTypeRepairAll          ButtonType = 28
+	ButtonTypeLeftArrow          ButtonType = 29
+	ButtonTypeRightArrow         ButtonType = 30
+	ButtonTypeQuery              ButtonType = 31
+	ButtonTypeSquelchChat        ButtonType = 32
 
 	ButtonNoFixedWidth  int = -1
 	ButtonNoFixedHeight int = -1
@@ -54,7 +62,16 @@ const (
 )
 
 const (
-	closeButtonBaseFrame = 10 // base frame offset of the "close" button dc6
+	buyButtonBaseFrame         = 2  // base frame offset of the "buy" button dc6
+	sellButtonBaseFrame        = 4  // base frame offset of the "sell" button dc6
+	repairButtonBaseFrame      = 6  // base frame offset of the "repair" button dc6
+	queryButtonBaseFrame       = 8  // base frame offset of the "query" button dc6
+	closeButtonBaseFrame       = 10 // base frame offset of the "close" button dc6
+	leftArrowButtonBaseFrame   = 12 // base frame offset of the "leftArrow" button dc6
+	rightArrowButtonBaseFrame  = 14 // base frame offset of the "rightArrow" button dc6
+	okButtonBaseFrame          = 16 // base frame offset of the "ok" button dc6
+	repairAllButtonBaseFrame   = 18 // base frame offset of the "repair all" button dc6
+	squelchChatButtonBaseFrame = 20 // base frame offset of the "?" button dc6
 )
 
 const (
@@ -73,6 +90,7 @@ type ButtonLayout struct {
 	YSegments        int
 	BaseFrame        int
 	DisabledFrame    int
+	DisabledColor    uint32
 	TextOffset       int
 	FixedWidth       int
 	FixedHeight      int
@@ -80,7 +98,29 @@ type ButtonLayout struct {
 	Toggleable       bool
 	AllowFrameChange bool
 	HasImage         bool
+	Tooltip          int
+	TooltipXOffset   int
+	TooltipYOffset   int
 }
+
+const (
+	buttonTooltipNone int = iota
+	buttonTooltipClose
+	buttonTooltipOk
+	buttonTooltipBuy
+	buttonTooltipSell
+	buttonTooltipRepair
+	buttonTooltipRepairAll
+	buttonTooltipLeftArrow
+	buttonTooltipRightArrow
+	buttonTooltipQuery
+	buttonTooltipSquelchChat
+)
+
+const (
+	buttonBuySellTooltipXOffset = 15
+	buttonBuySellTooltipYOffset = -2
+)
 
 const (
 	buttonWideSegmentsX     = 2
@@ -100,6 +140,10 @@ const (
 	buttonTallSegmentsY  = 1
 	buttonTallTextOffset = 5
 
+	buttonCancelSegmentsX  = 1
+	buttonCancelSegmentsY  = 1
+	buttonCancelTextOffset = 1
+
 	buttonOkCancelSegmentsX     = 1
 	buttonOkCancelSegmentsY     = 1
 	buttonOkCancelDisabledFrame = -1
@@ -108,16 +152,34 @@ const (
 	buttonBuySellSegmentsY     = 1
 	buttonBuySellDisabledFrame = 1
 
-	buttonSkillTreeTabXSegments     = 1
-	buttonSkillTreeTabYSegments     = 1
+	buttonSkillTreeTabXSegments = 1
+	buttonSkillTreeTabYSegments = 1
+
 	buttonSkillTreeTabDisabledFrame = 7
 	buttonSkillTreeTabBaseFrame     = 7
 	buttonSkillTreeTabFixedWidth    = 93
 	buttonSkillTreeTabFixedHeight   = 107
 
+	buttonMinipanelOpenCloseBaseFrame = 0
+	buttonMinipanelXSegments          = 1
+	buttonMinipanelYSegments          = 1
+
+	buttonMinipanelCharacterBaseFrame = 0
+	buttonMinipanelInventoryBaseFrame = 2
+	buttonMinipanelSkilltreeBaseFrame = 4
+	buttonMinipanelPartyBaseFrame     = 6
+	buttonMinipanelAutomapBaseFrame   = 8
+	buttonMinipanelMessageBaseFrame   = 10
+	buttonMinipanelQuestBaseFrame     = 12
+	buttonMinipanelMenBaseFrame       = 14
+
 	buttonRunSegmentsX     = 1
 	buttonRunSegmentsY     = 1
 	buttonRunDisabledFrame = -1
+
+	buttonGoldCoinSegmentsX     = 1
+	buttonGoldCoinSegmentsY     = 1
+	buttonGoldCoinDisabledFrame = -1
 
 	pressedButtonOffset = 2
 )
@@ -129,8 +191,24 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			XSegments:        buttonWideSegmentsX,
 			YSegments:        buttonWideSegmentsY,
 			DisabledFrame:    buttonWideDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
 			TextOffset:       buttonWideTextOffset,
 			ResourceName:     d2resource.WideButtonBlank,
+			PaletteName:      d2resource.PaletteUnits,
+			FontPath:         d2resource.FontExocet10,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+		},
+		ButtonTypeCancel: {
+			XSegments:        buttonCancelSegmentsX,
+			YSegments:        buttonCancelSegmentsY,
+			DisabledFrame:    0,
+			DisabledColor:    lightGreyAlpha75,
+			TextOffset:       buttonCancelTextOffset,
+			ResourceName:     d2resource.CancelButton,
 			PaletteName:      d2resource.PaletteUnits,
 			FontPath:         d2resource.FontExocet10,
 			AllowFrameChange: true,
@@ -143,6 +221,7 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			XSegments:        buttonShortSegmentsX,
 			YSegments:        buttonShortSegmentsY,
 			DisabledFrame:    buttonShortDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
 			TextOffset:       buttonShortTextOffset,
 			ResourceName:     d2resource.ShortButtonBlank,
 			PaletteName:      d2resource.PaletteUnits,
@@ -156,6 +235,7 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 		ButtonTypeMedium: {
 			XSegments:        buttonMediumSegmentsX,
 			YSegments:        buttonMediumSegmentsY,
+			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.MediumButtonBlank,
 			PaletteName:      d2resource.PaletteUnits,
 			FontPath:         d2resource.FontExocet10,
@@ -169,6 +249,7 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			XSegments:        buttonTallSegmentsX,
 			YSegments:        buttonTallSegmentsY,
 			TextOffset:       buttonTallTextOffset,
+			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.TallButtonBlank,
 			PaletteName:      d2resource.PaletteUnits,
 			FontPath:         d2resource.FontExocet10,
@@ -182,6 +263,7 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			XSegments:        buttonOkCancelSegmentsX,
 			YSegments:        buttonOkCancelSegmentsY,
 			DisabledFrame:    buttonOkCancelDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.CancelButton,
 			PaletteName:      d2resource.PaletteUnits,
 			FontPath:         d2resource.FontRediculous,
@@ -195,7 +277,23 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			XSegments:        buttonRunSegmentsX,
 			YSegments:        buttonRunSegmentsY,
 			DisabledFrame:    buttonRunDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.RunButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       true,
+			FontPath:         d2resource.FontRediculous,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+		},
+		ButtonTypeGoldCoin: {
+			XSegments:        buttonGoldCoinSegmentsX,
+			YSegments:        buttonGoldCoinSegmentsY,
+			DisabledFrame:    buttonGoldCoinDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.GoldCoinButton,
 			PaletteName:      d2resource.PaletteSky,
 			Toggleable:       true,
 			FontPath:         d2resource.FontRediculous,
@@ -209,6 +307,7 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			XSegments:        buttonBuySellSegmentsX,
 			YSegments:        buttonBuySellSegmentsY,
 			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
 			ResourceName:     d2resource.BuySellButton,
 			PaletteName:      d2resource.PaletteUnits,
 			Toggleable:       true,
@@ -219,11 +318,186 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			FixedWidth:       ButtonNoFixedWidth,
 			FixedHeight:      ButtonNoFixedHeight,
 			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipClose,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeSquareOk: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        okButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipOk,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeBuy: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        buyButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipBuy,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeSell: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        sellButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipSell,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeRepair: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        repairButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipRepair,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeRepairAll: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        repairAllButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipRepairAll,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeLeftArrow: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        leftArrowButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipLeftArrow,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeRightArrow: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        rightArrowButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipRightArrow,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeQuery: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        queryButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipQuery,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeSquelchChat: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.BuySellButton,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			BaseFrame:        squelchChatButtonBaseFrame,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+			Tooltip:          buttonTooltipSquelchChat,
+			TooltipXOffset:   buttonBuySellTooltipXOffset,
+			TooltipYOffset:   buttonBuySellTooltipYOffset,
 		},
 		ButtonTypeSkillTreeTab: {
 			XSegments:        buttonSkillTreeTabXSegments,
 			YSegments:        buttonSkillTreeTabYSegments,
 			DisabledFrame:    buttonSkillTreeTabDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
 			BaseFrame:        buttonSkillTreeTabBaseFrame,
 			ResourceName:     d2resource.SkillsPanelAmazon,
 			PaletteName:      d2resource.PaletteSky,
@@ -233,6 +507,150 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			HasImage:         false,
 			FixedWidth:       buttonSkillTreeTabFixedWidth,
 			FixedHeight:      buttonSkillTreeTabFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelOpenClose: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelOpenCloseBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelOpenCloseBaseFrame,
+			ResourceName:     d2resource.MenuButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       true,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelCharacter: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelCharacterBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelCharacterBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelInventory: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelInventoryBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelInventoryBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelSkill: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelSkilltreeBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelSkilltreeBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelParty: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelPartyBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelPartyBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelAutomap: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelAutomapBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelAutomapBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelMessage: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelMessageBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelMessageBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelQuest: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelQuestBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelQuestBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       whiteAlpha100,
+		},
+		ButtonTypeMinipanelMen: {
+			XSegments:        buttonMinipanelXSegments,
+			YSegments:        buttonMinipanelYSegments,
+			DisabledFrame:    buttonMinipanelMenBaseFrame,
+			DisabledColor:    whiteAlpha100,
+			BaseFrame:        buttonMinipanelMenBaseFrame,
+			ResourceName:     d2resource.MinipanelButton,
+			PaletteName:      d2resource.PaletteSky,
+			Toggleable:       false,
+			FontPath:         d2resource.Font16,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
 			LabelColor:       whiteAlpha100,
 		},
 	}
@@ -253,6 +671,7 @@ type Button struct {
 	enabled               bool
 	pressed               bool
 	toggled               bool
+	tooltip               *Tooltip
 }
 
 // NewButton creates an instance of Button
@@ -272,11 +691,11 @@ func (ui *UIManager) NewButton(buttonType ButtonType, text string) *Button {
 
 	lbl.SetText(text)
 	lbl.Color[0] = d2util.Color(buttonLayout.LabelColor)
-	lbl.Alignment = d2gui.HorizontalAlignCenter
+	lbl.Alignment = HorizontalAlignCenter
 
 	buttonSprite, err := ui.NewSprite(buttonLayout.ResourceName, buttonLayout.PaletteName)
 	if err != nil {
-		log.Print(err)
+		ui.Error(err.Error())
 		return nil
 	}
 
@@ -286,7 +705,7 @@ func (ui *UIManager) NewButton(buttonType ButtonType, text string) *Button {
 		for i := 0; i < buttonLayout.XSegments; i++ {
 			w, _, frameSizeErr := buttonSprite.GetFrameSize(i)
 			if frameSizeErr != nil {
-				log.Print(frameSizeErr)
+				ui.Error(frameSizeErr.Error())
 				return nil
 			}
 
@@ -300,7 +719,7 @@ func (ui *UIManager) NewButton(buttonType ButtonType, text string) *Button {
 		for i := 0; i < buttonLayout.YSegments; i++ {
 			_, h, frameSizeErr := buttonSprite.GetFrameSize(i * buttonLayout.YSegments)
 			if frameSizeErr != nil {
-				log.Print(frameSizeErr)
+				ui.Error(frameSizeErr.Error())
 				return nil
 			}
 
@@ -312,6 +731,8 @@ func (ui *UIManager) NewButton(buttonType ButtonType, text string) *Button {
 
 	buttonSprite.SetPosition(0, 0)
 	buttonSprite.SetEffect(d2enum.DrawEffectModulate)
+
+	btn.createTooltip()
 
 	ui.addWidget(btn) // important that this comes before prerenderStates!
 
@@ -327,16 +748,56 @@ type buttonStateDescriptor struct {
 	fmtErr               string
 }
 
+func (v *Button) createTooltip() {
+	var t *Tooltip
+	// this is also related with https://github.com/OpenDiablo2/OpenDiablo2/issues/944
+	// all strings starting with "#" could be wrong translated to another locales
+	switch v.buttonLayout.Tooltip {
+	case buttonTooltipNone:
+		return
+	case buttonTooltipClose:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("strClose"))
+	case buttonTooltipOk:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("#971"))
+	case buttonTooltipBuy:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("NPCPurchaseItems"))
+	case buttonTooltipSell:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("NPCSellItems"))
+	case buttonTooltipRepair:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("NPCRepairItems"))
+	case buttonTooltipRepairAll:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("#128"))
+	case buttonTooltipLeftArrow:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("KeyLeft"))
+	case buttonTooltipRightArrow:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("KeyRight"))
+	case buttonTooltipQuery:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("")) // need to be set up
+	case buttonTooltipSquelchChat:
+		t = v.manager.NewTooltip(d2resource.Font16, d2resource.PaletteSky, TooltipXCenter, TooltipYBottom)
+		t.SetText(v.manager.asset.TranslateString("strParty19")) // need to be verivied
+	}
+
+	t.SetVisible(false)
+	v.SetTooltip(t)
+}
+
 func (v *Button) prerenderStates(btnSprite *Sprite, btnLayout *ButtonLayout, label *Label) {
 	numButtonStates := btnSprite.GetFrameCount() / (btnLayout.XSegments * btnLayout.YSegments)
 
 	// buttons always have a base image
 	if v.buttonLayout.HasImage {
-		err := btnSprite.RenderSegmented(v.normalSurface, btnLayout.XSegments,
+		btnSprite.RenderSegmented(v.normalSurface, btnLayout.XSegments,
 			btnLayout.YSegments, btnLayout.BaseFrame)
-		if err != nil {
-			fmt.Printf("failed to render button normalSurface, err: %v\n", err)
-		}
 	}
 
 	_, labelHeight := label.GetSize()
@@ -344,7 +805,7 @@ func (v *Button) prerenderStates(btnSprite *Sprite, btnLayout *ButtonLayout, lab
 	xOffset := half(v.width)
 
 	label.SetPosition(xOffset, textY)
-	label.RenderNoError(v.normalSurface)
+	label.Render(v.normalSurface)
 
 	if !btnLayout.HasImage || !btnLayout.AllowFrameChange {
 		return
@@ -412,13 +873,10 @@ func (v *Button) prerenderStates(btnSprite *Sprite, btnLayout *ButtonLayout, lab
 
 		*state.prerenderdestination = surface
 
-		err := btnSprite.RenderSegmented(*state.prerenderdestination, xSeg, ySeg, state.baseFrame)
-		if err != nil {
-			fmt.Printf(state.fmtErr, err)
-		}
+		btnSprite.RenderSegmented(*state.prerenderdestination, xSeg, ySeg, state.baseFrame)
 
 		label.SetPosition(state.offsetX, state.offsetY)
-		label.RenderNoError(*state.prerenderdestination)
+		label.Render(*state.prerenderdestination)
 	}
 }
 
@@ -437,7 +895,7 @@ func (v *Button) Activate() {
 }
 
 // Render renders the button
-func (v *Button) Render(target d2interface.Surface) error {
+func (v *Button) Render(target d2interface.Surface) {
 	target.PushFilter(d2enum.FilterNearest)
 	defer target.Pop()
 
@@ -446,9 +904,14 @@ func (v *Button) Render(target d2interface.Surface) error {
 
 	switch {
 	case !v.enabled:
-		target.PushColor(d2util.Color(lightGreyAlpha75))
+		target.PushColor(d2util.Color(v.buttonLayout.DisabledColor))
 		defer target.Pop()
-		target.Render(v.disabledSurface)
+
+		if v.toggled {
+			target.Render(v.toggledSurface)
+		} else {
+			target.Render(v.disabledSurface)
+		}
 	case v.toggled && v.pressed:
 		target.Render(v.pressedToggledSurface)
 	case v.pressed:
@@ -462,13 +925,16 @@ func (v *Button) Render(target d2interface.Surface) error {
 	default:
 		target.Render(v.normalSurface)
 	}
-
-	return nil
 }
 
 // Toggle negates the toggled state of the button
 func (v *Button) Toggle() {
 	v.toggled = !v.toggled
+}
+
+// GetToggled returns the toggled state of the button
+func (v *Button) GetToggled() bool {
+	return v.toggled
 }
 
 // Advance advances the button state
@@ -494,6 +960,31 @@ func (v *Button) GetPressed() bool {
 // SetPressed sets the pressed state of the button
 func (v *Button) SetPressed(pressed bool) {
 	v.pressed = pressed
+}
+
+// SetVisible sets the pressed state of the button
+func (v *Button) SetVisible(visible bool) {
+	v.BaseWidget.SetVisible(visible)
+
+	if v.isHovered() && !visible {
+		v.hoverEnd()
+	}
+}
+
+// SetPosition sets the position of the widget
+func (v *Button) SetPosition(x, y int) {
+	v.BaseWidget.SetPosition(x, y)
+
+	if v.buttonLayout.Tooltip != buttonTooltipNone {
+		v.tooltip.SetPosition(x+v.buttonLayout.TooltipXOffset, y+v.buttonLayout.TooltipYOffset)
+	}
+}
+
+// SetTooltip adds a tooltip to the button
+func (v *Button) SetTooltip(t *Tooltip) {
+	v.tooltip = t
+	v.OnHoverStart(func() { v.tooltip.SetVisible(true) })
+	v.OnHoverEnd(func() { v.tooltip.SetVisible(false) })
 }
 
 func half(n int) int {
