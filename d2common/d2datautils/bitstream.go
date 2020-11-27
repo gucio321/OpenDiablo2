@@ -1,7 +1,7 @@
 package d2datautils
 
 import (
-	"log"
+	"errors"
 )
 
 const (
@@ -30,19 +30,19 @@ func CreateBitStream(newData []byte) *BitStream {
 }
 
 // ReadBits reads the specified number of bits and returns the value
-func (v *BitStream) ReadBits(bitCount int) int {
+func (v *BitStream) ReadBits(bitCount int) (int, error) {
 	if bitCount > maxBits {
-		log.Panic("Maximum BitCount is 16")
+		return 0, errors.New("maximum BitCount is 16")
 	}
 
 	if !v.EnsureBits(bitCount) {
-		return -1
+		return -1, nil
 	}
 
 	result := v.current & (0xffff >> uint(maxBits-bitCount))
 	v.WasteBits(bitCount)
 
-	return result
+	return result, nil
 }
 
 // PeekByte returns the current byte without adjusting the position

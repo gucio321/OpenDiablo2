@@ -203,7 +203,11 @@ func decode(input *d2datautils.BitStream, head *linkedNode) *linkedNode {
 	node := head
 
 	for node.child0 != nil {
-		bit := input.ReadBits(1)
+		bit, err := input.ReadBits(1)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		if bit == -1 {
 			log.Fatal("unexpected end of file")
 		}
@@ -399,7 +403,10 @@ Loop:
 		case 256:
 			break Loop
 		case 257:
-			newvalue := bitstream.ReadBits(8)
+			newvalue, err := bitstream.ReadBits(8)
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			outputstream.PushByte(byte(newvalue))
 			tail = insertNode(tail, newvalue)

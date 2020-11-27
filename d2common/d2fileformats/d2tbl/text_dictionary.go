@@ -1,7 +1,7 @@
 package d2tbl
 
 import (
-	"log"
+	"errors"
 	"strconv"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
@@ -24,7 +24,7 @@ const (
 )
 
 // LoadTextDictionary loads the text dictionary from the given data
-func LoadTextDictionary(dictionaryData []byte) TextDictionary {
+func LoadTextDictionary(dictionaryData []byte) (TextDictionary, error) {
 	lookupTable := make(TextDictionary)
 
 	br := d2datautils.CreateStreamReader(dictionaryData)
@@ -37,7 +37,7 @@ func LoadTextDictionary(dictionaryData []byte) TextDictionary {
 
 	// Version (always 0)
 	if _, err := br.ReadByte(); err != nil {
-		log.Fatal("Error reading Version record")
+		return nil, errors.New("error reading Version record")
 	}
 
 	br.GetUInt32() // StringOffset
@@ -93,5 +93,5 @@ func LoadTextDictionary(dictionaryData []byte) TextDictionary {
 		}
 	}
 
-	return lookupTable
+	return lookupTable, nil
 }

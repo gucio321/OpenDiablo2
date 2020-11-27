@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/JoshVarga/blast"
@@ -30,6 +29,8 @@ type Stream struct {
 
 // CreateStream creates an MPQ stream
 func CreateStream(mpq *MPQ, blockTableEntry BlockTableEntry, fileName string) (*Stream, error) {
+	var err error
+
 	result := &Stream{
 		MPQData:           mpq,
 		BlockTableEntry:   blockTableEntry,
@@ -45,10 +46,8 @@ func CreateStream(mpq *MPQ, blockTableEntry BlockTableEntry, fileName string) (*
 	result.BlockSize = 0x200 << result.MPQData.data.BlockSize //nolint:gomnd // MPQ magic
 
 	if result.BlockTableEntry.HasFlag(FilePatchFile) {
-		log.Fatal("Patching is not supported")
+		return result, errors.New("patching is not supported")
 	}
-
-	var err error
 
 	if (result.BlockTableEntry.HasFlag(FileCompress) || result.BlockTableEntry.HasFlag(FileImplode)) &&
 		!result.BlockTableEntry.HasFlag(FileSingleUnit) {
@@ -85,12 +84,10 @@ func (v *Stream) loadBlockOffsets() error {
 		decrypt(v.BlockPositions, v.EncryptionSeed-1)
 
 		if v.BlockPositions[0] != blockPosSize {
-			log.Println("Decryption of MPQ failed!")
 			return errors.New("decryption of MPQ failed")
 		}
 
 		if v.BlockPositions[1] > v.BlockSize+blockPosSize {
-			log.Println("Decryption of MPQ failed!")
 			return errors.New("decryption of MPQ failed")
 		}
 	}
@@ -98,7 +95,7 @@ func (v *Stream) loadBlockOffsets() error {
 	return nil
 }
 
-func (v *Stream) Read(buffer []byte, offset, count uint32) uint32 {
+func (v *Stream) Read(buffer []byte, offset, count uint32) (uint32, error) {
 	if v.BlockTableEntry.HasFlag(FileSingleUnit) {
 		return v.readInternalSingleUnit(buffer, offset, count)
 	}
@@ -107,7 +104,10 @@ func (v *Stream) Read(buffer []byte, offset, count uint32) uint32 {
 	readTotal := uint32(0)
 
 	for toRead > 0 {
-		read := v.readInternal(buffer, offset, toRead)
+		read, err := v.readInternal(buffer, offset, toRead)
+		if err != nil {
+			return 0, err
+		}
 
 		if read == 0 {
 			break
@@ -118,12 +118,15 @@ func (v *Stream) Read(buffer []byte, offset, count uint32) uint32 {
 		toRead -= read
 	}
 
-	return readTotal
+	return readTotal, nil
 }
 
-func (v *Stream) readInternalSingleUnit(buffer []byte, offset, count uint32) uint32 {
+func (v *Stream) readInternalSingleUnit(buffer []byte, offset, count uint32) (uint32, error) {
 	if len(v.CurrentData) == 0 {
-		v.loadSingleUnit()
+		err := v.loadSingleUnit()
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	bytesToCopy := d2math.Min(uint32(len(v.CurrentData))-v.CurrentPosition, count)
@@ -132,60 +135,74 @@ func (v *Stream) readInternalSingleUnit(buffer []byte, offset, count uint32) uin
 
 	v.CurrentPosition += bytesToCopy
 
-	return bytesToCopy
+	return bytesToCopy, nil
 }
 
-func (v *Stream) readInternal(buffer []byte, offset, count uint32) uint32 {
-	v.bufferData()
+func (v *Stream) readInternal(buffer []byte, offset, count uint32) (uint32, error) {
+	err := v.bufferData()
+	if err != nil {
+		return 0, err
+	}
 
 	localPosition := v.CurrentPosition % v.BlockSize
 	bytesToCopy := d2math.MinInt32(int32(len(v.CurrentData))-int32(localPosition), int32(count))
 
 	if bytesToCopy <= 0 {
-		return 0
+		return 0, nil
 	}
 
 	copy(buffer[offset:offset+uint32(bytesToCopy)], v.CurrentData[localPosition:localPosition+uint32(bytesToCopy)])
 
 	v.CurrentPosition += uint32(bytesToCopy)
 
-	return uint32(bytesToCopy)
+	return uint32(bytesToCopy), nil
 }
 
-func (v *Stream) bufferData() {
+func (v *Stream) bufferData() error {
+	var err error
+
 	requiredBlock := v.CurrentPosition / v.BlockSize
 
 	if requiredBlock == v.CurrentBlockIndex {
-		return
+		return nil
 	}
 
 	expectedLength := d2math.Min(v.BlockTableEntry.UncompressedFileSize-(requiredBlock*v.BlockSize), v.BlockSize)
-	v.CurrentData = v.loadBlock(requiredBlock, expectedLength)
+
+	v.CurrentData, err = v.loadBlock(requiredBlock, expectedLength)
+	if err != nil {
+		return err
+	}
+
 	v.CurrentBlockIndex = requiredBlock
+
+	return nil
 }
 
-func (v *Stream) loadSingleUnit() {
+func (v *Stream) loadSingleUnit() error {
 	fileData := make([]byte, v.BlockSize)
 
 	_, err := v.MPQData.file.Seek(int64(v.MPQData.data.HeaderSize), 0)
 	if err != nil {
-		log.Print(err)
+		return err
 	}
 
 	_, err = v.MPQData.file.Read(fileData)
 	if err != nil {
-		log.Print(err)
+		return err
 	}
 
 	if v.BlockSize == v.BlockTableEntry.UncompressedFileSize {
 		v.CurrentData = fileData
-		return
+		return nil
 	}
 
-	v.CurrentData = decompressMulti(fileData, v.BlockTableEntry.UncompressedFileSize)
+	v.CurrentData, err = decompressMulti(fileData, v.BlockTableEntry.UncompressedFileSize)
+
+	return err
 }
 
-func (v *Stream) loadBlock(blockIndex, expectedLength uint32) []byte {
+func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 	var (
 		offset uint32
 		toRead uint32
@@ -204,12 +221,12 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) []byte {
 
 	_, err := v.MPQData.file.Seek(int64(offset), 0)
 	if err != nil {
-		log.Print(err)
+		return nil, err
 	}
 
 	_, err = v.MPQData.file.Read(data)
 	if err != nil {
-		log.Print(err)
+		return nil, err
 	}
 
 	if v.BlockTableEntry.HasFlag(FileEncrypted) && v.BlockTableEntry.UncompressedFileSize > 3 {
@@ -222,7 +239,10 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) []byte {
 
 	if v.BlockTableEntry.HasFlag(FileCompress) && (toRead != expectedLength) {
 		if !v.BlockTableEntry.HasFlag(FileSingleUnit) {
-			data = decompressMulti(data, expectedLength)
+			data, err = decompressMulti(data, expectedLength)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			data = pkDecompress(data)
 		}
@@ -232,11 +252,11 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) []byte {
 		data = pkDecompress(data)
 	}
 
-	return data
+	return data, nil
 }
 
 //nolint:gomnd // Will fix enum values later
-func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
+func decompressMulti(data []byte /*expectedLength*/, _ uint32) ([]byte, error) {
 	compressionType := data[0]
 
 	switch compressionType {
@@ -245,13 +265,13 @@ func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
 	case 2: // ZLib/Deflate
 		return deflate(data[1:])
 	case 8: // PKLib/Impode
-		return pkDecompress(data[1:])
+		return pkDecompress(data[1:]), nil
 	case 0x10: // BZip2
 		panic("bzip2 decompression not supported")
 	case 0x80: // IMA ADPCM Stereo
-		return d2compression.WavDecompress(data[1:], 2)
+		return d2compression.WavDecompress(data[1:], 2), nil
 	case 0x40: // IMA ADPCM Mono
-		return d2compression.WavDecompress(data[1:], 1)
+		return d2compression.WavDecompress(data[1:], 1), nil
 	case 0x12:
 		panic("lzma decompression not supported")
 	// Combos
@@ -268,7 +288,7 @@ func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
 
 		copy(tmp, sinput)
 
-		return tmp
+		return tmp, nil
 	case 0x48:
 		// byte[] result = PKDecompress(sinput, outputLength);
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 1);
@@ -279,7 +299,7 @@ func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
 		tmp := make([]byte, len(sinput))
 		copy(tmp, sinput)
 
-		return tmp
+		return tmp, nil
 	case 0x88:
 		// byte[] result = PKDecompress(sinput, outputLength);
 		// return MpqWavCompression.Decompress(new MemoryStream(result), 2);
@@ -289,7 +309,7 @@ func decompressMulti(data []byte /*expectedLength*/, _ uint32) []byte {
 	}
 }
 
-func deflate(data []byte) []byte {
+func deflate(data []byte) ([]byte, error) {
 	b := bytes.NewReader(data)
 	r, err := zlib.NewReader(b)
 
@@ -301,15 +321,15 @@ func deflate(data []byte) []byte {
 
 	_, err = buffer.ReadFrom(r)
 	if err != nil {
-		log.Panic(err)
+		return []byte{}, err
 	}
 
 	err = r.Close()
 	if err != nil {
-		log.Panic(err)
+		return []byte{}, err
 	}
 
-	return buffer.Bytes()
+	return buffer.Bytes(), nil
 }
 
 func pkDecompress(data []byte) []byte {

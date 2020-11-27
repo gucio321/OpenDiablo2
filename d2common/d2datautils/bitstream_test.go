@@ -10,7 +10,11 @@ func TestBitStreamBits(t *testing.T) {
 	shouldBeOne := 0
 
 	for i := 0; i < 8; i++ {
-		bit := bitStream.ReadBits(1)
+		bit, err := bitStream.ReadBits(1)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
 		if bit != shouldBeOne {
 			t.Fatalf("Expected %d but got %d on iteration %d", shouldBeOne, bit, i)
 		}
@@ -28,7 +32,12 @@ func TestBitStreamBytes(t *testing.T) {
 	bitStream := CreateBitStream(data)
 
 	for i := 0; i < 8; i++ {
-		b := byte(bitStream.ReadBits(8))
+		bs, err := bitStream.ReadBits(8)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		b := byte(bs)
 		if b != data[i] {
 			t.Fatalf("Expected %d but got %d on iteration %d", data[i], b, i)
 		}

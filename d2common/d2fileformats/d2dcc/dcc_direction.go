@@ -1,7 +1,7 @@
 package d2dcc
 
 import (
-	"log"
+	"errors"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2geom"
@@ -37,7 +37,10 @@ type DCCDirection struct {
 }
 
 // CreateDCCDirection creates an instance of a DCCDirection.
-func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) *DCCDirection {
+// nolint:funlen // this function creates DCC direction
+func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) (*DCCDirection, error) {
+	var err error
+
 	var crazyBitTable = []byte{0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 26, 28, 30, 32}
 
 	result := &DCCDirection{
@@ -60,7 +63,11 @@ func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) *DCCDirection {
 
 	// Load the frame headers
 	for frameIdx := 0; frameIdx < file.FramesPerDirection; frameIdx++ {
-		result.Frames[frameIdx] = CreateDCCDirectionFrame(bm, result)
+		result.Frames[frameIdx], err = CreateDCCDirectionFrame(bm, result)
+		if err != nil {
+			return result, nil
+		}
+
 		minx = int(d2math.MinInt32(int32(result.Frames[frameIdx].Box.Left), int32(minx)))
 		miny = int(d2math.MinInt32(int32(result.Frames[frameIdx].Box.Top), int32(miny)))
 		maxx = int(d2math.MaxInt32(int32(result.Frames[frameIdx].Box.Right()), int32(maxx)))
@@ -70,7 +77,7 @@ func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) *DCCDirection {
 	result.Box = d2geom.Rectangle{Left: minx, Top: miny, Width: maxx - minx, Height: maxy - miny}
 
 	if result.OptionalDataBits > 0 {
-		log.Panic("Optional bits in DCC data is not currently supported.")
+		return result, errors.New("optional bits in DCC data is not currently supported")
 	}
 
 	if (result.CompressionFlags & 0x2) > 0 {
@@ -132,11 +139,14 @@ func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) *DCCDirection {
 	result.PixelBuffer = nil
 
 	// Verify that everything we expected to read was actually read (sanity check)...
-	result.verify(equalCellsBitstream, pixelMaskBitstream, encodingTypeBitsream, rawPixelCodesBitstream)
+	err = result.verify(equalCellsBitstream, pixelMaskBitstream, encodingTypeBitsream, rawPixelCodesBitstream)
+	if err != nil {
+		return result, err
+	}
 
 	bm.SkipBits(pixelCodeandDisplacement.BitsRead())
 
-	return result
+	return result, nil
 }
 
 func (v *DCCDirection) verify(
@@ -144,22 +154,24 @@ func (v *DCCDirection) verify(
 	pixelMaskBitstream,
 	encodingTypeBitstream,
 	rawPixelCodesBitstream *d2datautils.BitMuncher,
-) {
+) error {
 	if equalCellsBitstream.BitsRead() != v.EqualCellsBitstreamSize {
-		log.Panic("Did not read the correct number of bits!")
+		return errors.New("did not read the correct number of bits")
 	}
 
 	if pixelMaskBitstream.BitsRead() != v.PixelMaskBitstreamSize {
-		log.Panic("Did not read the correct number of bits!")
+		return errors.New("did not read the correct number of bits")
 	}
 
 	if encodingTypeBitstream.BitsRead() != v.EncodingTypeBitsreamSize {
-		log.Panic("Did not read the correct number of bits!")
+		return errors.New("did not read the correct number of bits")
 	}
 
 	if rawPixelCodesBitstream.BitsRead() != v.RawPixelCodesBitstreamSize {
-		log.Panic("Did not read the correct number of bits!")
+		return errors.New("did not read the correct number of bits")
 	}
+
+	return nil
 }
 
 // nolint:gocognit,gocyclo // Can't reduce

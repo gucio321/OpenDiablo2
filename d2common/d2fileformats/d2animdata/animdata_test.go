@@ -1,7 +1,6 @@
 package d2animdata
 
 import (
-	"log"
 	"os"
 	"testing"
 )
@@ -33,8 +32,8 @@ func TestLoad(t *testing.T) {
 
 	err := testFile.Close()
 	if err != nil {
+		t.Error(err.Error())
 		t.Fail()
-		log.Print(err)
 	}
 }
 
@@ -65,8 +64,8 @@ func TestLoad_BadData(t *testing.T) {
 
 	err := testFile.Close()
 	if err != nil {
+		t.Error(err.Error())
 		t.Fail()
-		log.Print(err)
 	}
 }
 

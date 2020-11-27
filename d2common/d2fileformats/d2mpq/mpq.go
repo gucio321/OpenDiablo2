@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -163,7 +162,10 @@ func (v *MPQ) readHeader() error {
 		return err
 	}
 
-	v.loadBlockTable()
+	err = v.loadBlockTable()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -171,7 +173,7 @@ func (v *MPQ) readHeader() error {
 func (v *MPQ) loadHashTable() error {
 	_, err := v.file.Seek(int64(v.data.HashTableOffset), 0)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	hashData := make([]uint32, v.data.HashTableEntries*4) //nolint:gomnd // // Decryption magic
@@ -180,7 +182,7 @@ func (v *MPQ) loadHashTable() error {
 	for i := range hashData {
 		_, err := v.file.Read(hash)
 		if err != nil {
-			log.Print(err)
+			return err
 		}
 
 		hashData[i] = binary.LittleEndian.Uint32(hash)
@@ -202,10 +204,10 @@ func (v *MPQ) loadHashTable() error {
 	return nil
 }
 
-func (v *MPQ) loadBlockTable() {
+func (v *MPQ) loadBlockTable() error {
 	_, err := v.file.Seek(int64(v.data.BlockTableOffset), 0)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	blockData := make([]uint32, v.data.BlockTableEntries*4) //nolint:gomnd // // binary data
@@ -214,7 +216,7 @@ func (v *MPQ) loadBlockTable() {
 	for i := range blockData {
 		_, err = v.file.Read(hash) //nolint:errcheck // Will fix later
 		if err != nil {
-			log.Print(err)
+			return err
 		}
 
 		blockData[i] = binary.LittleEndian.Uint32(hash)
@@ -230,6 +232,8 @@ func (v *MPQ) loadBlockTable() {
 			Flags:                FileFlag(blockData[(i*4)+3]),
 		})
 	}
+
+	return nil
 }
 
 func decrypt(data []uint32, seed uint32) {
@@ -287,11 +291,13 @@ func (v *MPQ) getFileBlockData(fileName string) (BlockTableEntry, error) {
 }
 
 // Close closes the MPQ file
-func (v *MPQ) Close() {
+func (v *MPQ) Close() error {
 	err := v.file.Close()
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // FileExists checks the mpq to see if the file exists
@@ -316,7 +322,11 @@ func (v *MPQ) ReadFile(fileName string) ([]byte, error) {
 	}
 
 	buffer := make([]byte, fileBlockData.UncompressedFileSize)
-	mpqStream.Read(buffer, 0, fileBlockData.UncompressedFileSize)
+
+	_, err = mpqStream.Read(buffer, 0, fileBlockData.UncompressedFileSize)
+	if err != nil {
+		return buffer, err
+	}
 
 	return buffer, nil
 }

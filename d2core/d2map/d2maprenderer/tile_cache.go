@@ -102,6 +102,7 @@ func (mr *MapRenderer) generateFloorCache(tile *d2ds1.FloorShadowRecord) {
 
 		indexData := make([]byte, tileData[i].Width*tileHeight)
 		d2dt1.DecodeTileGfxData(tileData[i].Blocks, &indexData, tileYOffset, tileData[i].Width)
+
 		pixels, err := d2util.ImgIndexToRGBA(indexData, mr.palette)
 		if err != nil {
 			mr.Errorf("ImgIndexToRGBA error: %v", err)

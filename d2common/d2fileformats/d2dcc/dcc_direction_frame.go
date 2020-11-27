@@ -1,7 +1,7 @@
 package d2dcc
 
 import (
-	"log"
+	"errors"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2geom"
@@ -25,7 +25,7 @@ type DCCDirectionFrame struct {
 }
 
 // CreateDCCDirectionFrame Creates a DCCDirectionFrame for a DCC.
-func CreateDCCDirectionFrame(bits *d2datautils.BitMuncher, direction *DCCDirection) *DCCDirectionFrame {
+func CreateDCCDirectionFrame(bits *d2datautils.BitMuncher, direction *DCCDirection) (*DCCDirectionFrame, error) {
 	result := &DCCDirectionFrame{}
 
 	bits.GetBits(direction.Variable0Bits) // Variable0
@@ -39,19 +39,19 @@ func CreateDCCDirectionFrame(bits *d2datautils.BitMuncher, direction *DCCDirecti
 	result.FrameIsBottomUp = bits.GetBit() == 1
 
 	if result.FrameIsBottomUp {
-		log.Panic("Bottom up frames are not implemented.")
-	} else {
-		result.Box = d2geom.Rectangle{
-			Left:   result.XOffset,
-			Top:    result.YOffset - result.Height + 1,
-			Width:  result.Width,
-			Height: result.Height,
-		}
+		return result, errors.New("bottom up frames are not implemented")
+	}
+
+	result.Box = d2geom.Rectangle{
+		Left:   result.XOffset,
+		Top:    result.YOffset - result.Height + 1,
+		Width:  result.Width,
+		Height: result.Height,
 	}
 
 	result.valid = true
 
-	return result
+	return result, nil
 }
 
 func (v *DCCDirectionFrame) recalculateCells(direction *DCCDirection) {

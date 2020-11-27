@@ -169,6 +169,7 @@ func (a *DC6Animation) createFrameSurface(directionIndex, frameIndex int) (d2int
 	startFrame := directionIndex * int(a.dc6.FramesPerDirection)
 	dc6Frame := a.dc6.Frames[startFrame+frameIndex]
 	indexData := a.dc6.DecodeFrame(startFrame + frameIndex)
+
 	colorData, err := d2util.ImgIndexToRGBA(indexData, a.palette)
 	if err != nil {
 		return nil, fmt.Errorf("ImgIndexToRGBA error: %v", err)

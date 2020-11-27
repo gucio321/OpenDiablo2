@@ -8,7 +8,7 @@ type Archive interface {
 	Path() string
 	Contains(string) bool
 	Size() uint32
-	Close()
+	Close() error
 	FileExists(fileName string) bool
 	ReadFile(fileName string) ([]byte, error)
 	ReadFileStream(fileName string) (DataStream, error)

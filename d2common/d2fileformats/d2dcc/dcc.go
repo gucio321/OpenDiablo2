@@ -2,6 +2,7 @@ package d2dcc
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
 )
@@ -22,6 +23,8 @@ type DCC struct {
 
 // Load loads a DCC file.
 func Load(fileData []byte) (*DCC, error) {
+	var err error
+
 	result := &DCC{
 		fileData: fileData,
 	}
@@ -50,16 +53,25 @@ func Load(fileData []byte) (*DCC, error) {
 
 	for i := 0; i < result.NumberOfDirections; i++ {
 		result.directionOffsets[i] = int(bm.GetInt32())
-		result.Directions[i] = result.decodeDirection(i)
+
+		result.Directions[i], err = result.decodeDirection(i)
+		if err != nil {
+			return result, fmt.Errorf("error during decoding direction: %v", err)
+		}
 	}
 
 	return result, nil
 }
 
 // decodeDirection decodes and returns the given direction
-func (d *DCC) decodeDirection(direction int) *DCCDirection {
-	return CreateDCCDirection(d2datautils.CreateBitMuncher(d.fileData,
+func (d *DCC) decodeDirection(direction int) (*DCCDirection, error) {
+	dcc, err := CreateDCCDirection(d2datautils.CreateBitMuncher(d.fileData,
 		d.directionOffsets[direction]*directionOffsetMultiplier), d)
+	if err != nil {
+		return dcc, fmt.Errorf("CreateDCCDirection error: %v", err.Error())
+	}
+
+	return dcc, nil
 }
 
 // Clone creates a copy of the DCC
