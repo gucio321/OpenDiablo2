@@ -717,7 +717,7 @@ func (v *SelectHeroClass) setDescLabels(descKey int, key string) {
 	var heroDesc string
 
 	if key != "" {
-		heroDesc = v.asset.TranslateString(key)
+		heroDesc = v.asset.TranslateString2(key, 1)
 	} else {
 		heroDesc = v.asset.TranslateLabel(descKey)
 	}

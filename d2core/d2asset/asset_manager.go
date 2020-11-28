@@ -304,6 +304,33 @@ func (am *AssetManager) TranslateString(input interface{}) string {
 	return key
 }
 
+func (am *AssetManager) TranslateString2(input interface{}, o int) string {
+	var key string
+	var pos string
+
+	switch s := input.(type) {
+	case string:
+		key = s
+	case fmt.Stringer:
+		key = s.String()
+	}
+
+	for idx := range am.tables {
+		if value, found := am.tables[idx][key]; found {
+			pos = value
+			if o == 0 {
+				return value
+			} else {
+				o--
+			}
+		}
+	}
+
+	// Fix to allow v.setDescLabels("#123") to be bypassed for a patch in issue #360. Reenable later.
+	// log.Panicf("Could not find a string for the key '%s'", key)
+	return pos
+}
+
 func (am *AssetManager) baseLabelNumbers(idx int) int {
 	baseLabelNumbers := []int{
 		// main menu labels
