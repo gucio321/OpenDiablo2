@@ -491,9 +491,9 @@ func (box *Box) OnMouseButtonDown(event d2interface.MouseEvent) bool {
 }
 
 // Render the box to the given surface
-func (box *Box) Render(target d2interface.Surface) error {
+func (box *Box) Render(target d2interface.Surface) {
 	if !box.isOpen {
-		return nil
+		return
 	}
 
 	target.PushTranslation(box.x, box.y)
@@ -503,8 +503,6 @@ func (box *Box) Render(target d2interface.Surface) error {
 	for _, s := range box.sprites {
 		s.Render(target)
 	}
-
-	return nil
 }
 
 // IsInRect checks if the given point is within the box main layout rectangle

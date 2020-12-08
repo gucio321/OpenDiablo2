@@ -565,9 +565,7 @@ func (m *EscapeMenu) Advance(elapsed float64) error {
 // Render will render the escape menu on the target surface
 func (m *EscapeMenu) Render(target d2interface.Surface) error {
 	if m.isOpen {
-		if err := m.keyBindingMenu.Render(target); err != nil {
-			return err
-		}
+		m.keyBindingMenu.Render(target)
 	}
 
 	return nil

@@ -228,12 +228,15 @@ func NewGameControls(
 	hoverLabel := hud.nameLabel
 	hoverLabel.SetBackgroundColor(d2util.Color(blackAlpha50percent))
 
+	messageLog := NewMessageLog(asset, ui, renderer, l)
+
 	gc := &GameControls{
 		asset:          asset,
 		ui:             ui,
 		renderer:       renderer,
 		hero:           hero,
 		heroState:      heroState,
+		messageLog:     messageLog,
 		escapeMenu:     escapeMenu,
 		inputListener:  inputListener,
 		mapRenderer:    mapRenderer,
@@ -272,6 +275,7 @@ func NewGameControls(
 	gc.questLog.SetOnCloseCb(gc.onCloseQuestLog)
 	gc.inventory.SetOnCloseCb(gc.onCloseInventory)
 	gc.skilltree.SetOnCloseCb(gc.onCloseSkilltree)
+	gc.messageLog.SetOnCloseCb(gc.onCloseMessageLog)
 
 	gc.escapeMenu.SetOnCloseCb(gc.hud.miniPanel.restoreDisabled)
 	gc.HelpOverlay.SetOnCloseCb(gc.hud.miniPanel.restoreDisabled)
@@ -304,6 +308,7 @@ type GameControls struct {
 	hud                    *HUD
 	skilltree              *skillTree
 	heroStatsPanel         *HeroStatsPanel
+	messageLog             *MessageLog
 	questLog               *QuestLog
 	HelpOverlay            *HelpOverlay
 	bottomMenuRect         *d2geom.Rectangle
@@ -671,6 +676,13 @@ func (g *GameControls) onCloseSkilltree() {
 	g.updateLayout()
 }
 
+func (g *GameControls) toggleMessageLog() {
+	g.messageLog.Toggle()
+}
+
+func (g *GameControls) onCloseMessageLog() {
+}
+
 func (g *GameControls) openEscMenu() {
 	g.inventory.Close()
 	g.skilltree.Close()
@@ -688,12 +700,14 @@ func (g *GameControls) Load() {
 	g.skilltree.load()
 	g.heroStatsPanel.Load()
 	g.questLog.Load()
+	g.messageLog.Load()
 	g.HelpOverlay.Load()
 
 	miniPanelActions := &miniPanelActions{
 		characterToggle: g.toggleHeroStatsPanel,
 		inventoryToggle: g.toggleInventoryPanel,
 		skilltreeToggle: g.toggleSkilltreePanel,
+		messageToggle:   g.toggleMessageLog,
 		menuToggle:      g.openEscMenu,
 		questToggle:     g.toggleQuestLog,
 	}
@@ -786,6 +800,7 @@ func (g *GameControls) Render(target d2interface.Surface) error {
 
 func (g *GameControls) renderPanels(target d2interface.Surface) error {
 	g.inventory.Render(target)
+	g.messageLog.Render(target)
 
 	return nil
 }
