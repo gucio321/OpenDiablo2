@@ -136,7 +136,8 @@ func (l *layout) Trigger() {
 }
 
 type showLayoutLabel struct {
-	*d2gui.Label
+	//*d2gui.Label
+	*d2gui.Sprite
 	target     layoutID
 	showLayout func(id layoutID)
 }
@@ -176,19 +177,19 @@ type actionableElement interface {
 
 func (m *EscapeMenu) newMainLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
-		m.addBigSelectionLabel(l, "OPTIONS", optionsLayoutID)
-		m.addBigSelectionLabel(l, "SAVE AND EXIT GAME", saveLayoutID)
-		m.addBigSelectionLabel(l, "RETURN TO GAME", noLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeOptions, optionsLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeExit, saveLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeReturnToGame, noLayoutID)
 	})
 }
 
 func (m *EscapeMenu) newOptionsLayout() *layout {
 	return m.wrapLayout(func(l *layout) {
-		m.addBigSelectionLabel(l, "SOUND OPTIONS", soundOptionsLayoutID)
-		m.addBigSelectionLabel(l, "VIDEO OPTIONS", videoOptionsLayoutID)
-		m.addBigSelectionLabel(l, "AUTOMAP OPTIONS", automapOptionsLayoutID)
-		m.addBigSelectionLabel(l, "CONFIGURE CONTROLS", configureControlsLayoutID)
-		m.addBigSelectionLabel(l, "PREVIOUS MENU", mainLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeOptSoundOptions, soundOptionsLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeOptVideoOptions, videoOptionsLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeOptAutoMapOptions, automapOptionsLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeOptCfgOptions, configureControlsLayoutID)
+		m.addBigSelectionLabel(l, d2resource.EscapeOptPrevious, mainLayoutID)
 	})
 }
 
@@ -296,12 +297,15 @@ func (m *EscapeMenu) addTitle(l *layout, text string) {
 }
 
 func (m *EscapeMenu) addBigSelectionLabel(l *layout, text string, targetLayout layoutID) {
-	guiLabel, err := l.AddLabel(text, d2gui.FontStyle42Units)
+	guiSprite, err := l.AddSprite(text, d2resource.PaletteSky)
 	if err != nil {
 		m.Error(err.Error())
 	}
 
-	label := &showLayoutLabel{Label: guiLabel, target: targetLayout, showLayout: m.showLayout}
+	w := guiSprite.Animation.GetFrameCount()
+	guiSprite.SetSegmented(w, 1, 0)
+
+	label := &showLayoutLabel{Sprite: guiSprite, target: targetLayout, showLayout: m.showLayout}
 	label.SetMouseClickHandler(func(_ d2interface.MouseEvent) {
 		label.Trigger()
 	})
@@ -319,12 +323,15 @@ func (m *EscapeMenu) addBigSelectionLabel(l *layout, text string, targetLayout l
 func (m *EscapeMenu) addPreviousMenuLabel(l *layout) {
 	l.AddSpacerStatic(spacerWidth, labelGutter)
 
-	guiLabel, err := l.AddLabel("PREVIOUS MENU", d2gui.FontStyle30Units)
+	guiSprite, err := l.AddSprite(d2resource.EscapeOptPrevious, d2resource.PaletteSky)
 	if err != nil {
 		m.Error(err.Error())
 	}
 
-	label := &showLayoutLabel{Label: guiLabel, target: optionsLayoutID, showLayout: m.showLayout}
+	w := guiSprite.Animation.GetFrameCount()
+	guiSprite.SetSegmented(w, 1, 0)
+
+	label := &showLayoutLabel{Sprite: guiSprite, target: optionsLayoutID, showLayout: m.showLayout}
 	label.SetMouseClickHandler(func(_ d2interface.MouseEvent) {
 		label.Trigger()
 	})

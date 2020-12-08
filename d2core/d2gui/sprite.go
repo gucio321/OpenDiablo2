@@ -28,7 +28,7 @@ type Sprite struct {
 	segmentsY   int
 	frameOffset int
 
-	animation d2interface.Animation
+	Animation d2interface.Animation
 }
 
 // AnimatedSprite is a sprite that has animation
@@ -43,7 +43,7 @@ func createSprite(imagePath, palettePath string, assetManager *d2asset.AssetMana
 	}
 
 	sprite := &Sprite{}
-	sprite.animation = animation
+	sprite.Animation = animation
 	sprite.SetVisible(true)
 
 	return sprite, nil
@@ -59,12 +59,12 @@ func createAnimatedSprite(
 		return nil, err
 	}
 
-	sprite := &AnimatedSprite{Sprite: &Sprite{animation: animation}}
+	sprite := &AnimatedSprite{Sprite: &Sprite{Animation: animation}}
 
 	if direction == DirectionForward {
-		sprite.animation.PlayForward()
+		sprite.Animation.PlayForward()
 	} else {
-		sprite.animation.PlayBackward()
+		sprite.Animation.PlayBackward()
 	}
 
 	sprite.SetVisible(true)
@@ -73,12 +73,12 @@ func createAnimatedSprite(
 }
 
 func (s *AnimatedSprite) render(target d2interface.Surface) {
-	_, frameHeight := s.animation.GetCurrentFrameSize()
+	_, frameHeight := s.Animation.GetCurrentFrameSize()
 
 	target.PushTranslation(s.x, s.y-frameHeight)
 	defer target.Pop()
 
-	s.animation.Render(target)
+	s.Animation.Render(target)
 }
 
 // SetSegmented sets the segment properties of the sprite
@@ -89,21 +89,21 @@ func (s *Sprite) SetSegmented(segmentsX, segmentsY, frameOffset int) {
 }
 
 func (s *Sprite) render(target d2interface.Surface) {
-	err := renderSegmented(s.animation, s.segmentsX, s.segmentsY, s.frameOffset, target)
+	err := renderSegmented(s.Animation, s.segmentsX, s.segmentsY, s.frameOffset, target)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func (s *Sprite) advance(elapsed float64) error {
-	return s.animation.Advance(elapsed)
+	return s.Animation.Advance(elapsed)
 }
 
 func (s *Sprite) getSize() (width, height int) {
-	return s.animation.GetCurrentFrameSize()
+	return s.Animation.GetCurrentFrameSize()
 }
 
 // SetEffect sets the draw effect for the sprite
 func (s *Sprite) SetEffect(e d2enum.DrawEffect) {
-	s.animation.SetEffect(e)
+	s.Animation.SetEffect(e)
 }
