@@ -204,6 +204,7 @@ func (s *HeroStatsPanel) renderStaticMenu(target d2interface.Surface) {
 	s.renderStaticLabels(target)
 }
 
+// nolint:dupl // see quest_log.go.renderStaticPanelFrames comment
 func (s *HeroStatsPanel) renderStaticPanelFrames(target d2interface.Surface) {
 	frames := []int{
 		statsPanelTopLeft,
@@ -254,7 +255,7 @@ func (s *HeroStatsPanel) renderStaticLabels(target d2interface.Surface) {
 		centerAlign bool
 	}{
 		{labelHeroNameX, labelHeroNameY, s.heroName, d2resource.Font16, true},
-		{labelHeroClassX, labelHeroClassY, s.asset.TranslateHeroClass(s.heroClass), d2resource.Font16, true},
+		{labelHeroClassX, labelHeroClassY, s.asset.TranslateString(s.heroClass), d2resource.Font16, true},
 
 		{labelLevelX, labelLevelY, s.asset.TranslateString("strchrlvl"), d2resource.Font6, true},
 		{labelExperienceX, labelExperienceY, s.asset.TranslateString("strchrexp"), d2resource.Font6, true},

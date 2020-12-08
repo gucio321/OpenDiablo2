@@ -30,11 +30,14 @@ type Player struct {
 	isRunning         bool
 	isCasting         bool
 	onFinishedCasting func()
+	Act               int
 }
 
 // run speed should be walkspeed * 1.5, since in the original game it is 6 yards walk and 9 yards run.
-const baseWalkSpeed = 6.0
-const baseRunSpeed = 9.0
+const (
+	baseWalkSpeed = 9.0
+	baseRunSpeed  = 13.0
+)
 
 // ID returns the Player uuid
 func (p *Player) ID() string {

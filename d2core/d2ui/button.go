@@ -40,16 +40,19 @@ const (
 	ButtonTypeSquareClose        ButtonType = 20
 	ButtonTypeSquareOk           ButtonType = 21
 	ButtonTypeSkillTreeTab       ButtonType = 22
-	ButtonTypeMinipanelOpenClose ButtonType = 23
-	ButtonTypeMinipanelParty     ButtonType = 24
-	ButtonTypeBuy                ButtonType = 25
-	ButtonTypeSell               ButtonType = 26
-	ButtonTypeRepair             ButtonType = 27
-	ButtonTypeRepairAll          ButtonType = 28
-	ButtonTypeLeftArrow          ButtonType = 29
-	ButtonTypeRightArrow         ButtonType = 30
-	ButtonTypeQuery              ButtonType = 31
-	ButtonTypeSquelchChat        ButtonType = 32
+	ButtonTypeQuestDescr         ButtonType = 23
+	ButtonTypeMinipanelOpenClose ButtonType = 24
+	ButtonTypeMinipanelParty     ButtonType = 25
+	ButtonTypeBuy                ButtonType = 26
+	ButtonTypeSell               ButtonType = 27
+	ButtonTypeRepair             ButtonType = 28
+	ButtonTypeRepairAll          ButtonType = 29
+	ButtonTypeLeftArrow          ButtonType = 30
+	ButtonTypeRightArrow         ButtonType = 31
+	ButtonTypeQuery              ButtonType = 32
+	ButtonTypeSquelchChat        ButtonType = 33
+	ButtonTypeTabBlank           ButtonType = 34
+	ButtonTypeBlankQuestBtn      ButtonType = 35
 
 	ButtonNoFixedWidth  int = -1
 	ButtonNoFixedHeight int = -1
@@ -160,9 +163,16 @@ const (
 	buttonSkillTreeTabFixedWidth    = 93
 	buttonSkillTreeTabFixedHeight   = 107
 
+	buttonTabXSegments = 1
+	buttonTabYSegments = 1
+
 	buttonMinipanelOpenCloseBaseFrame = 0
 	buttonMinipanelXSegments          = 1
 	buttonMinipanelYSegments          = 1
+
+	blankQuestButtonXSegments      = 1
+	blankQuestButtonYSegments      = 1
+	blankQuestButtonDisabledFrames = -1
 
 	buttonMinipanelCharacterBaseFrame = 0
 	buttonMinipanelInventoryBaseFrame = 2
@@ -492,6 +502,51 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 			Tooltip:          buttonTooltipSquelchChat,
 			TooltipXOffset:   buttonBuySellTooltipXOffset,
 			TooltipYOffset:   buttonBuySellTooltipYOffset,
+		},
+		ButtonTypeQuestDescr: {
+			XSegments:        buttonBuySellSegmentsX,
+			YSegments:        buttonBuySellSegmentsY,
+			DisabledFrame:    buttonBuySellDisabledFrame,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.QuestLogQDescrBtn,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: true,
+			HasImage:         true,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+		},
+		ButtonTypeTabBlank: {
+			XSegments:        buttonTabXSegments,
+			YSegments:        buttonTabYSegments,
+			DisabledFrame:    0,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.WPTabs,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: false,
+			HasImage:         false,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
+		},
+		ButtonTypeBlankQuestBtn: {
+			XSegments:        blankQuestButtonXSegments,
+			YSegments:        blankQuestButtonYSegments,
+			DisabledFrame:    blankQuestButtonDisabledFrames,
+			DisabledColor:    lightGreyAlpha75,
+			ResourceName:     d2resource.QuestLogDone,
+			PaletteName:      d2resource.PaletteUnits,
+			Toggleable:       true,
+			FontPath:         d2resource.Font30,
+			AllowFrameChange: false,
+			HasImage:         false,
+			FixedWidth:       ButtonNoFixedWidth,
+			FixedHeight:      ButtonNoFixedHeight,
+			LabelColor:       greyAlpha100,
 		},
 		ButtonTypeSkillTreeTab: {
 			XSegments:        buttonSkillTreeTabXSegments,
