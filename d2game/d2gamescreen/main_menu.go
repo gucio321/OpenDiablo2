@@ -37,8 +37,10 @@ type mainMenuScreenMode int
 	CinematicsMenu              = 9
 )*/
 
+type subMenu int
+
 const (
-	trademark = iota
+	trademark subMenu = iota
 	subMenuMainMenu
 	singlePlayerCharacterSelect
 	singlePlayerSelectHeroClass
@@ -208,7 +210,7 @@ func CreateMainMenu(
 		buildInfo:      buildInfo,
 		uiManager:      ui,
 		heroState:      heroStateFactory,
-		subMenu:        0,
+		subMenu:        trademark,
 	}
 
 	mainMenu.Logger = d2util.NewLogger()
@@ -273,7 +275,7 @@ type MainMenu struct {
 
 	*d2util.Logger
 
-	subMenu int
+	subMenu subMenu
 }
 
 // OnLoad is called to load the resources for the main menu
@@ -655,7 +657,7 @@ func (v *MainMenu) OnKeyUp(event d2interface.KeyEvent) bool {
 		return true
 	case subMenuMainMenu: // for "main" main menu screen pressing escape closes game
 		if v.onEscapePressed(event) {
-			fmt.Println("\n\nEscape button pressed in main menu\nsubMenu is: ", v.subMenu, " = 1")
+			fmt.Println("\n\nEscape button pressed in main menu\nsubMenu is: ", v.subMenu, " = ", v.subMenu)
 			v.onExitButtonClicked()
 		}
 
@@ -780,7 +782,7 @@ func (v *MainMenu) getLocalIP() string {
 	return v.asset.TranslateLabel(ipNotFoundLabel)
 }
 
-func (v *MainMenu) setsubMenuMode(menu int) {
+func (v *MainMenu) setsubMenuMode(menu subMenu) {
 	v.subMenu = menu
 	fmt.Printf("\n\nSetSubmenuMode was called\nwith input value: %d", menu)
 }
