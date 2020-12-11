@@ -777,9 +777,7 @@ func (g *GameControls) Render(target d2interface.Surface) error {
 		return err
 	}
 
-	if err := g.escapeMenu.Render(target); err != nil {
-		return err
-	}
+	g.escapeMenu.Render(target)
 
 	return nil
 }

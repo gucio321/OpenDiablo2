@@ -16,6 +16,7 @@ const (
 	RenderPriorityHUDPanel
 	RenderPriorityMinipanel
 	RenderPriorityHelpPanel
+	RenderPriorityEscapeMenu
 	RenderPriorityForeground
 )
 
