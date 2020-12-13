@@ -631,3 +631,8 @@ func (h *HelpOverlay) Render(target d2interface.Surface) {
 		target.Pop()
 	}
 }
+
+func (h *HelpOverlay) UpdateKeyMap(keyMap *KeyMap) {
+	h.keyMap = keyMap
+	h.setupBulletedList()
+}

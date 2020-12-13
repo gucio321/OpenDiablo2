@@ -103,6 +103,11 @@ func (v *Label) GetTextMetrics(text string) (width, height int) {
 	return v.font.GetTextMetrics(text)
 }
 
+// GetText returns label text
+func (v *Label) GetText() string {
+	return v.text
+}
+
 // SetText sets the label's text
 func (v *Label) SetText(newText string) {
 	v.text = v.processColorTokens(newText)

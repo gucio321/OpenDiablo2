@@ -1,6 +1,7 @@
 package d2player
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -38,19 +39,27 @@ const (
 	labelVitalityX, labelVitalityY   = 95, 300
 	labelEnergyX, labelEnergyY       = 100, 360
 
-	labelDefenseX, labelDefenseY = 280, 260
-	labelStaminaX, labelStaminaY = 280, 300
-	labelLifeX, labelLifeY       = 280, 322
-	labelManaX, labelManaY       = 280, 360
+	labelAttackDmgLH1X, labelAttackDmgLH1Y = 285, 148
+	labelAttackDmgLH2X, labelAttackDmgLH2Y = 285, 155
+	labelAttackDmgRH1X, labelAttackDmgRH1Y = 285, 170
+	labelAttackDmgRH2X, labelAttackDmgRH2Y = 285, 177
+	labelAttackLH1X, labelAttackLH1Y       = 297, 210
+	labelAttackLH2X, labelAttackLH2Y       = 297, 217
+	labelAttackRH1X, labelAttackRH1Y       = 297, 234
+	labelAttackRH2X, labelAttackRH2Y       = 297, 241
+	labelDefenseX, labelDefenseY           = 280, 260
+	labelStaminaX, labelStaminaY           = 280, 300
+	labelLifeX, labelLifeY                 = 280, 322
+	labelManaX, labelManaY                 = 280, 360
 
-	labelResFireLine1X, labelResFireLine1Y   = 310, 396
-	labelResFireLine2X, labelResFireLine2Y   = 310, 403
-	labelResColdLine1X, labelResColdLine1Y   = 310, 444
-	labelResColdLine2X, labelResColdLine2Y   = 310, 452
-	labelResLightLine1X, labelResLightLine1Y = 310, 420
-	labelResLightLine2X, labelResLightLine2Y = 310, 428
-	labelResPoisLine1X, labelResPoisLine1Y   = 310, 468
-	labelResPoisLine2X, labelResPoisLine2Y   = 310, 476
+	labelResFireLine1X, labelResFireLine1Y   = 308, 396
+	labelResFireLine2X, labelResFireLine2Y   = 308, 403
+	labelResColdLine1X, labelResColdLine1Y   = 308, 444
+	labelResColdLine2X, labelResColdLine2Y   = 308, 452
+	labelResLightLine1X, labelResLightLine1Y = 308, 420
+	labelResLightLine2X, labelResLightLine2Y = 308, 428
+	labelResPoisLine1X, labelResPoisLine1Y   = 308, 468
+	labelResPoisLine2X, labelResPoisLine2Y   = 308, 476
 )
 
 const (
@@ -66,21 +75,48 @@ type PanelText struct {
 	AlignCenter bool
 }
 
+const (
+	FireRes = iota
+	ColdRes
+	LightRes
+	PsnRes
+)
+
 // StatsPanelLabels represents the labels in the status panel
 type StatsPanelLabels struct {
-	Level        *d2ui.Label
-	Experience   *d2ui.Label
-	NextLevelExp *d2ui.Label
-	Strength     *d2ui.Label
-	Dexterity    *d2ui.Label
-	Vitality     *d2ui.Label
-	Energy       *d2ui.Label
-	Health       *d2ui.Label
-	MaxHealth    *d2ui.Label
-	Mana         *d2ui.Label
-	MaxMana      *d2ui.Label
-	MaxStamina   *d2ui.Label
-	Stamina      *d2ui.Label
+	Level          *d2ui.Label
+	Experience     *d2ui.Label
+	NextLevelExp   *d2ui.Label
+	Strength       *d2ui.Label
+	Dexterity      *d2ui.Label
+	Vitality       *d2ui.Label
+	Energy         *d2ui.Label
+	Health         *d2ui.Label
+	MaxHealth      *d2ui.Label
+	Mana           *d2ui.Label
+	MaxMana        *d2ui.Label
+	MaxStamina     *d2ui.Label
+	Stamina        *d2ui.Label
+	AttackRatingLH *d2ui.Label
+	AttackRatingRH *d2ui.Label
+	AttackDamageLH *d2ui.Label
+	AttackDamageRH *d2ui.Label
+	FireRes        *d2ui.Label
+	ColdRes        *d2ui.Label
+	LightRes       *d2ui.Label
+	PsnRes         *d2ui.Label
+}
+
+// optionalLabels represents labels, which hasn't to be displayed
+type optionalLabels struct {
+	attackRatingLH      *d2ui.Label
+	attackRatingLHValue *d2ui.Label
+	attackRatingRH      *d2ui.Label
+	attackRatingRHValue *d2ui.Label
+	damageLH            *d2ui.Label
+	damageLHValue       *d2ui.Label
+	damageRH            *d2ui.Label
+	damageRHValue       *d2ui.Label
 }
 
 // NewHeroStatsPanel creates a new hero status panel
@@ -176,6 +212,7 @@ func (s *HeroStatsPanel) Toggle() {
 func (s *HeroStatsPanel) Open() {
 	s.isOpen = true
 	s.panelGroup.SetVisible(true)
+	s.setOptionalLabelsVisiblity()
 }
 
 // Close closed the hero status panel
@@ -247,6 +284,15 @@ func (s *HeroStatsPanel) renderStaticLabels(target d2interface.Surface) {
 	lr := strings.Split(s.asset.TranslateString("strchrlit"), "\n")
 	cr := strings.Split(s.asset.TranslateString("strchrcol"), "\n")
 	pr := strings.Split(s.asset.TranslateString("strchrpos"), "\n")
+
+	// attackRating string looks as follows: %s\nAttack Rating
+	// this should convert it to []string{ 'Attack', 'Rating' }
+
+	// attack
+	attack := s.asset.TranslateString("skillan0")
+	attackRating := strings.Split(fmt.Sprintf(s.asset.TranslateString("strchrrat"), attack), "\n")
+	dmg := s.asset.TranslateString("strchrskm")
+
 	// all static labels are not stored since we use them only once to generate the image cache
 	var staticLabelConfigs = []struct {
 		x, y        int
@@ -264,6 +310,14 @@ func (s *HeroStatsPanel) renderStaticLabels(target d2interface.Surface) {
 		{labelDexterityX, labelDexterityY, s.asset.TranslateString("strchrdex"), d2resource.Font6, false},
 		{labelVitalityX, labelVitalityY, s.asset.TranslateString("strchrvit"), d2resource.Font6, false},
 		{labelEnergyX, labelEnergyY, s.asset.TranslateString("strchreng"), d2resource.Font6, false},
+		{labelAttackDmgLH1X, labelAttackDmgLH1Y, attack, d2resource.Font6, true},
+		{labelAttackDmgLH2X, labelAttackDmgLH2Y, dmg, d2resource.Font6, true},
+		{labelAttackDmgRH1X, labelAttackDmgRH1Y, attack, d2resource.Font6, true},
+		{labelAttackDmgRH2X, labelAttackDmgRH2Y, dmg, d2resource.Font6, true},
+		{labelAttackLH1X, labelAttackLH1Y, attackRating[0], d2resource.Font6, true},
+		{labelAttackLH2X, labelAttackLH2Y, attackRating[len(attackRating)-1], d2resource.Font6, true},
+		{labelAttackRH1X, labelAttackRH1Y, attackRating[0], d2resource.Font6, true},
+		{labelAttackRH2X, labelAttackRH2Y, attackRating[len(attackRating)-1], d2resource.Font6, true},
 		{labelDefenseX, labelDefenseY, s.asset.TranslateString("strchrdef"), d2resource.Font6, false},
 		{labelStaminaX, labelStaminaY, s.asset.TranslateString("strchrstm"), d2resource.Font6, true},
 		{labelLifeX, labelLifeY, s.asset.TranslateString("strchrlif"), d2resource.Font6, true},
@@ -314,11 +368,20 @@ func (s *HeroStatsPanel) initStatValueLabels() {
 		{&s.labels.Health, s.heroState.Health, 370, 320},
 		{&s.labels.MaxMana, s.heroState.MaxMana, 330, 355},
 		{&s.labels.Mana, s.heroState.Mana, 370, 355},
+		{&s.labels.AttackRatingLH, 0, 368, 147},
+		{&s.labels.AttackRatingRH, 0, 368, 171},
+		{&s.labels.AttackDamageLH, 0, 372, 209},
+		{&s.labels.AttackDamageRH, 0, 372, 233},
+		{&s.labels.FireRes, s.GetResValue(FireRes), 372, 396},
+		{&s.labels.ColdRes, s.GetResValue(ColdRes), 372, 420},
+		{&s.labels.LightRes, s.GetResValue(LightRes), 372, 444},
+		{&s.labels.PsnRes, s.GetResValue(PsnRes), 372, 468},
 	}
 
 	for _, cfg := range valueLabelConfigs {
 		*cfg.assignTo = s.createStatValueLabel(cfg.value, cfg.x, cfg.y)
 	}
+
 }
 
 func (s *HeroStatsPanel) setStatValues() {
@@ -339,6 +402,34 @@ func (s *HeroStatsPanel) setStatValues() {
 
 	s.labels.MaxMana.SetText(strconv.Itoa(s.heroState.MaxMana))
 	s.labels.Mana.SetText(strconv.Itoa(s.heroState.Mana))
+
+	// nolint:gomnd // test values
+	s.labels.AttackRatingLH.SetText(strconv.Itoa(6))
+	s.labels.AttackRatingRH.SetText(strconv.Itoa(7))
+	s.labels.AttackDamageLH.SetText(strconv.Itoa(8))
+	s.labels.AttackDamageRH.SetText(strconv.Itoa(9))
+
+	s.labels.FireRes.SetText(strconv.Itoa(s.GetResValue(FireRes)))
+	s.labels.ColdRes.SetText(strconv.Itoa(s.GetResValue(ColdRes)))
+	s.labels.LightRes.SetText(strconv.Itoa(s.GetResValue(LightRes)))
+	s.labels.PsnRes.SetText(strconv.Itoa(s.GetResValue(PsnRes)))
+
+}
+
+func (s *HeroStatsPanel) GetResValue(value int) int {
+	switch value {
+	case FireRes:
+		return 1
+	case ColdRes:
+		return 2
+	case LightRes:
+		return 3
+	case PsnRes:
+		return 4
+	}
+
+	// shouldn't be reached
+	return 0
 }
 
 func (s *HeroStatsPanel) createStatValueLabel(stat, x, y int) *d2ui.Label {
@@ -357,4 +448,13 @@ func (s *HeroStatsPanel) createTextLabel(element PanelText) *d2ui.Label {
 	s.panelGroup.AddWidget(label)
 
 	return label
+}
+
+func (s *HeroStatsPanel) setOptionalLabelsVisiblity() {
+	s.labels.AttackRatingLH.SetVisible(s.labels.AttackRatingLH.GetText() != "0")
+	fmt.Println(s.labels.AttackRatingLH.GetVisible())
+	s.labels.AttackRatingRH.SetVisible(s.labels.AttackRatingRH.GetText() != "0")
+	fmt.Println(s.labels.AttackRatingRH.GetVisible())
+	s.labels.AttackDamageLH.SetVisible(s.labels.AttackDamageLH.GetText() != "0")
+	s.labels.AttackDamageRH.SetVisible(s.labels.AttackDamageRH.GetText() != "0")
 }

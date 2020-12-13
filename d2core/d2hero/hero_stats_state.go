@@ -18,20 +18,15 @@ type HeroStatsState struct {
 	AttackRating  int `json:"attackRating"`
 	DefenseRating int `json:"defenseRating"`
 
-	MaxStamina int `json:"maxStamina"`
-	Health     int `json:"health"`
-	MaxHealth  int `json:"maxHealth"`
-	Mana       int `json:"mana"`
-	MaxMana    int `json:"maxMana"`
-
-	FireResistance      int `json:"fireResistance"`
-	ColdResistance      int `json:"coldResistance"`
-	LightningResistance int `json:"lightningResistance"`
-	PoisonResistance    int `json:"poisonResistance"`
+	Stamina    float64 `json:"-"` // only MaxStamina is saved, Stamina gets reset on entering world
+	MaxStamina int     `json:"maxStamina"`
+	Health     int     `json:"health"`
+	MaxHealth  int     `json:"maxHealth"`
+	Mana       int     `json:"mana"`
+	MaxMana    int     `json:"maxMana"`
 
 	// values which are not saved/loaded(computed)
-	Stamina      float64 `json:"-"` // only MaxStamina is saved, Stamina gets reset on entering world
-	NextLevelExp int     `json:"-"`
+	NextLevelExp int `json:"-"`
 }
 
 // CreateHeroStatsState generates a running state from a hero stats.
