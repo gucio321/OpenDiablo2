@@ -3,10 +3,11 @@ package d2player
 import (
 	//"strconv"
 	//"strings"
+	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
-	//"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
@@ -169,14 +170,14 @@ func (s *MessageLog) Load() {
 	})
 
 	s.panel.Load()
-	s.panel.GetLayout().AdjustEntryPlacement()
-	mainLayout.AdjustEntryPlacement()
 
-	closeButton := s.uiManager.NewButton(d2ui.ButtonTypeSquareClose, "")
-	closeButton.SetVisible(false)
-	closeButton.SetPosition(heroStatsCloseButtonX, heroStatsCloseButtonY)
-	closeButton.OnActivated(func() { s.Close() })
-	s.panelGroup.AddWidget(closeButton)
+	label := s.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteSky)
+	label.SetPosition(200, 200)
+	label.SetText("test label")
+	fmt.Println(label.GetSize())
+	fmt.Println(label.GetPosition())
+	label.OnHoverStart(func() { label.Color[0] = d2util.Color(d2gui.ColorRed); fmt.Println("elo") })
+	s.panelGroup.AddWidget(label)
 
 	s.panelGroup.SetVisible(false)
 }
