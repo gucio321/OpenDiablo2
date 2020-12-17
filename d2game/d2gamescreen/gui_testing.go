@@ -77,7 +77,7 @@ func (g *GuiTestMain) OnLoad(loading d2screen.LoadingState) {
 	layoutRight := layout.AddLayout(d2gui.PositionTypeVertical)
 	layoutRight.SetHorizontalAlign(d2gui.HorizontalAlignRight)
 
-	if _, err := layoutRight.AddButton("Medium", d2gui.ButtonStyleMedium); err != nil {
+	/*if _, err := layoutRight.AddButton("Medium", d2gui.ButtonStyleMedium); err != nil {
 		g.Errorf("could not add button: %s to the GuiTestMain screen\n", "Medium")
 	}
 
@@ -95,7 +95,7 @@ func (g *GuiTestMain) OnLoad(loading d2screen.LoadingState) {
 
 	if _, err := layoutRight.AddButton("Wide", d2gui.ButtonStyleWide); err != nil {
 		g.Errorf("could not add button: %s to the GuiTestMain screen\n", "Wide")
-	}
+	}*/
 
 	loading.Progress(ninetyPercent)
 

@@ -194,18 +194,6 @@ func (l *Layout) AddLabelWithColor(text string, fontStyle FontStyle, col color.R
 	return label, nil
 }
 
-// AddButton given a string and ButtonStyle, adds a button as a layout entry
-func (l *Layout) AddButton(text string, buttonStyle ButtonStyle) (*Button, error) {
-	button, err := l.createButton(l.renderer, text, buttonStyle)
-	if err != nil {
-		return nil, err
-	}
-
-	l.entries = append(l.entries, &layoutEntry{widget: button})
-
-	return button, nil
-}
-
 // Clear removes all layout entries
 func (l *Layout) Clear() {
 	l.entries = nil
@@ -256,8 +244,6 @@ func (l *Layout) renderEntryDebug(entry *layoutEntry, target d2interface.Surface
 		drawColor = d2util.Color(grey2)
 	case *Label:
 		drawColor = d2util.Color(green)
-	case *Button:
-		drawColor = d2util.Color(yellow)
 	}
 
 	target.DrawLine(entry.width, 0, drawColor)
@@ -445,89 +431,6 @@ func (l *Layout) handleEntryVerticalAlign(width int, entry *layoutEntry) {
 	case HorizontalAlignRight:
 		entry.x = width - entry.width
 	}
-}
-
-func (l *Layout) createButton(renderer d2interface.Renderer, text string,
-	buttonStyle ButtonStyle) (*Button,
-	error) {
-	config := getButtonStyleConfig(buttonStyle)
-	if config == nil {
-		return nil, errors.New("invalid button style")
-	}
-
-	animation, loadErr := l.assetManager.LoadAnimation(config.animationPath, config.palettePath)
-	if loadErr != nil {
-		return nil, loadErr
-	}
-
-	var buttonWidth int
-
-	for i := 0; i < config.segmentsX; i++ {
-		w, _, err := animation.GetFrameSize(i)
-		if err != nil {
-			return nil, err
-		}
-
-		buttonWidth += w
-	}
-
-	var buttonHeight int
-
-	for i := 0; i < config.segmentsY; i++ {
-		_, h, err := animation.GetFrameSize(i * config.segmentsY)
-		if err != nil {
-			return nil, err
-		}
-
-		buttonHeight += h
-	}
-
-	font, loadErr := l.loadFont(config.fontStyle)
-	if loadErr != nil {
-		return nil, loadErr
-	}
-
-	textColor := d2util.Color(grey)
-	textWidth, textHeight := font.GetTextMetrics(text)
-	textX := half(buttonWidth) - half(textWidth)
-	textY := half(buttonHeight) - half(textHeight) + config.textOffset
-
-	surfaceCount := animation.GetFrameCount() / (config.segmentsX * config.segmentsY)
-	surfaces := make([]d2interface.Surface, surfaceCount)
-
-	for i := 0; i < surfaceCount; i++ {
-		surface := renderer.NewSurface(buttonWidth, buttonHeight)
-
-		segX, segY, frame := config.segmentsX, config.segmentsY, i
-		if segErr := renderSegmented(animation, segX, segY, frame, surface); segErr != nil {
-			return nil, segErr
-		}
-
-		font.SetColor(textColor)
-
-		var textOffsetX, textOffsetY int
-
-		switch buttonState(i) {
-		case buttonStatePressed, buttonStatePressedToggled:
-			textOffsetX = -2
-			textOffsetY = 2
-		}
-
-		surface.PushTranslation(textX+textOffsetX, textY+textOffsetY)
-		surfaceErr := font.RenderText(text, surface)
-		surface.Pop()
-
-		if surfaceErr != nil {
-			return nil, surfaceErr
-		}
-
-		surfaces[i] = surface
-	}
-
-	button := &Button{width: buttonWidth, height: buttonHeight, surfaces: surfaces}
-	button.SetVisible(true)
-
-	return button, nil
 }
 
 func (l *Layout) loadFont(fontStyle FontStyle) (*d2asset.Font, error) {
