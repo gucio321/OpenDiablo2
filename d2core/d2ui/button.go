@@ -1021,7 +1021,7 @@ func (v *Button) SetPressed(pressed bool) {
 func (v *Button) SetVisible(visible bool) {
 	v.BaseWidget.SetVisible(visible)
 
-	if v.isHovered() && !visible {
+	if v.IsHovered() && !visible {
 		v.hoverEnd()
 	}
 }

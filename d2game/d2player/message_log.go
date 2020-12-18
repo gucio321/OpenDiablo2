@@ -134,6 +134,7 @@ type MessageLog struct {
 	renderer   d2interface.Renderer
 	onCloseCb  func()
 	panelGroup *d2ui.WidgetGroup
+	label      *d2ui.LabelButton
 
 	originX int
 	originY int
@@ -171,13 +172,16 @@ func (s *MessageLog) Load() {
 
 	s.panel.Load()
 
-	label := s.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteSky)
-	label.SetPosition(200, 200)
-	label.SetText("test label")
-	fmt.Println(label.GetSize())
-	fmt.Println(label.GetPosition())
-	label.OnHoverStart(func() { label.Color[0] = d2util.Color(d2gui.ColorRed); fmt.Println("elo") })
-	s.panelGroup.AddWidget(label)
+	s.label = s.uiManager.NewLabelButton(d2resource.Font16, d2resource.PaletteSky)
+	s.label.SetPosition(200, 200)
+	s.label.SetText("test label")
+	s.label.SetColors(d2util.Color(white), d2util.Color(d2gui.ColorRed))
+	fmt.Println(s.label.GetSize())
+	fmt.Println(s.label.GetPosition())
+	//s.label.OnHoverStart(func() { s.label.Color[0] = d2util.Color(d2gui.ColorRed) })
+	//s.label.OnHoverEnd(func() { s.label.Color[0] = d2util.Color(d2gui.ColorWhite) })
+	s.label.OnActivated(func() { fmt.Println("activated") })
+	s.panelGroup.AddWidget(s.label)
 
 	s.panelGroup.SetVisible(false)
 }
@@ -216,16 +220,14 @@ func (s *MessageLog) SetOnCloseCb(cb func()) {
 	s.onCloseCb = cb
 }
 
-/*
 // Advance updates labels on the panel
-func (s *HeroStatsPanel) Advance(elapsed float64) {
+func (s *MessageLog) Advance(elapsed float64) {
 	if !s.isOpen {
 		return
 	}
-
-	s.setStatValues()
 }
 
+/*
 func (s *HeroStatsPanel) renderStaticMenu(target d2interface.Surface) {
 	s.renderStaticPanelFrames(target)
 	s.renderStaticLabels(target)
@@ -327,6 +329,7 @@ func (s *MessageLog) Render(target d2interface.Surface) {
 	if !s.IsOpen() {
 		return
 	}
+
 	s.panel.Render(target)
 }
 

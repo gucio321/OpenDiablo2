@@ -34,11 +34,13 @@ func (ui *UIManager) NewSprite(animationPath, palettePath string) (*Sprite, erro
 
 	base := NewBaseWidget(ui)
 
-	return &Sprite{
+	sprite := &Sprite{
 		BaseWidget: base,
 		animation:  animation,
 		Logger:     ui.Logger,
-	}, nil
+	}
+
+	return sprite, nil
 }
 
 // Render renders the sprite on the given surface
@@ -196,4 +198,13 @@ func (s *Sprite) Advance(elapsed float64) error {
 // SetEffect sets the draw effect type
 func (s *Sprite) SetEffect(e d2enum.DrawEffect) {
 	s.animation.SetEffect(e)
+}
+
+// SetVisible sets the pressed state of the button
+func (v *Sprite) SetVisible(visible bool) {
+	v.BaseWidget.SetVisible(visible)
+
+	if v.IsHovered() && !visible {
+		v.hoverEnd()
+	}
 }
