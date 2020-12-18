@@ -2,7 +2,6 @@ package d2player
 
 import (
 	"fmt"
-	"image/color"
 	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
@@ -13,7 +12,9 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
-const white = 0xffffffff
+const (
+	white = 0xffffffff
+)
 
 const ( // for the dc6 frames
 	questLogTopLeft = iota
@@ -103,12 +104,6 @@ func NewQuestLog(asset *d2asset.AssetManager,
 		24: 0,
 		25: 0,
 		26: 0,
-		27: 0,
-		28: 0,
-		29: 0,
-		30: 0,
-		31: 0,
-		32: 1,
 	}
 
 	var quests [d2enum.ActsNumber]*d2ui.WidgetGroup
@@ -220,13 +215,13 @@ func (s *QuestLog) Load() {
 
 	s.questName = s.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteStatic)
 	s.questName.Alignment = d2ui.HorizontalAlignCenter
-	s.questName.Color[0] = rgbaColor(white)
+	s.questName.Color[0] = d2util.Color(white)
 	s.questName.SetPosition(questNameLabelX, questNameLabelY)
 	s.panelGroup.AddWidget(s.questName)
 
 	s.questDescr = s.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteStatic)
 	s.questDescr.Alignment = d2ui.HorizontalAlignLeft
-	s.questDescr.Color[0] = rgbaColor(white)
+	s.questDescr.Color[0] = d2util.Color(white)
 	s.questDescr.SetPosition(questDescrLabelX, questDescrLabelY)
 	s.panelGroup.AddWidget(s.questDescr)
 
@@ -290,6 +285,7 @@ func (s *QuestLog) loadQuestIconsForAct(act int) *d2ui.WidgetGroup {
 	var icon *d2ui.Sprite
 
 	for n := 0; n < questsInAct; n++ {
+		cw := n
 		x, y := s.getPositionForSocket(n)
 
 		socket, err := s.uiManager.NewSprite(d2resource.QuestLogSocket, d2resource.PaletteSky)
@@ -302,6 +298,7 @@ func (s *QuestLog) loadQuestIconsForAct(act int) *d2ui.WidgetGroup {
 
 		button := s.uiManager.NewButton(d2ui.ButtonTypeBlankQuestBtn, "")
 		button.SetPosition(x+questOffsetX, y+questOffsetY)
+		button.SetEnabled(s.questStatus[s.cordsToQuestID(act, cw)] != d2enum.QuestStatusNotStarted)
 		buttons = append(buttons, button)
 
 		icon, err = s.makeQuestIconForAct(act, n)
@@ -387,7 +384,7 @@ func (s *QuestLog) setQuestLabel() {
 
 	s.questName.SetText(s.asset.TranslateString(fmt.Sprintf("qstsa%dq%d", s.selectedTab+1, s.selectedQuest)))
 
-	status := s.questStatus[s.cordsToQuestID(s.selectedTab+1, s.selectedQuest)]
+	status := s.questStatus[s.cordsToQuestID(s.selectedTab+1, s.selectedQuest)-1]
 	switch status {
 	case d2enum.QuestStatusCompleted:
 		s.questDescr.SetText(
@@ -397,6 +394,8 @@ func (s *QuestLog) setQuestLabel() {
 					questDescriptionLenght),
 				"\n"),
 		)
+	case d2enum.QuestStatusCompleting:
+		s.questDescr.SetText("")
 	case d2enum.QuestStatusNotStarted:
 		s.questDescr.SetText("")
 	default:
@@ -529,32 +528,6 @@ func (s *QuestLog) renderStaticPanelFrames(target d2interface.Surface) {
 
 		s.panel.Render(target)
 	}
-}
-
-// copy from character select
-func rgbaColor(rgba uint32) color.RGBA {
-	result := color.RGBA{}
-	a, b, g, r := 0, 1, 2, 3
-	byteWidth := 8
-	byteMask := 0xff
-
-	for idx := 0; idx < 4; idx++ {
-		shift := idx * byteWidth
-		component := uint8(rgba>>shift) & uint8(byteMask)
-
-		switch idx {
-		case a:
-			result.A = component
-		case b:
-			result.B = component
-		case g:
-			result.G = component
-		case r:
-			result.R = component
-		}
-	}
-
-	return result
 }
 
 func (s *QuestLog) cordsToQuestID(act, number int) int {

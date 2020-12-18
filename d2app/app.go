@@ -124,7 +124,7 @@ func Create(gitBranch, gitCommit string) *App {
 
 	app.Logger = d2util.NewLogger()
 	app.Logger.SetPrefix(appLoggerPrefix)
-	app.Logger.SetLevel(d2util.LogLevelNone)
+	app.Logger.SetLevel(d2util.LogLevelDefault)
 
 	return app
 }
@@ -320,9 +320,6 @@ func (a *App) Run() error {
 	}
 
 	logLevel := *a.Options.LogLevel
-	if logLevel == d2util.LogLevelUnspecified {
-		logLevel = a.config.LogLevel
-	}
 
 	a.asset.SetLogLevel(logLevel)
 
@@ -943,9 +940,14 @@ func (a *App) ToCreateGame(filePath string, connType d2clientconnectiontype.Clie
 		fmt.Println(errorMessage)
 		a.ToMainMenu(errorMessage)
 	} else {
-		a.screen.SetNextScreen(d2gamescreen.CreateGame(
+		game, err := d2gamescreen.CreateGame(
 			a, a.asset, a.ui, a.renderer, a.inputManager, a.audio, gameClient, a.terminal, a.config.LogLevel, a.guiManager,
-		))
+		)
+		if err != nil {
+			a.Error(err.Error())
+		}
+
+		a.screen.SetNextScreen(game)
 	}
 }
 

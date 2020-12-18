@@ -10,7 +10,6 @@ import (
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2math/d2vector"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
@@ -124,7 +123,6 @@ func NewGameControls(
 	inputListener inputCallbackListener,
 	term d2interface.Terminal,
 	ui *d2ui.UIManager,
-	guiManager *d2gui.GuiManager,
 	keyMap *KeyMap,
 	l d2util.LogLevel,
 	isSinglePlayer bool,
@@ -210,8 +208,13 @@ func NewGameControls(
 
 	heroStatsPanel := NewHeroStatsPanel(asset, ui, hero.Name(), hero.Class, l, hero.Stats)
 	questLog := NewQuestLog(asset, ui, l, hero.Act)
-	inventory := NewInventory(asset, ui, l, hero.Gold, inventoryRecord)
-	skilltree := newSkillTree(hero.Skills, hero.Class, asset, l, ui)
+
+	inventory, err := NewInventory(asset, ui, l, hero.Gold, inventoryRecord)
+	if err != nil {
+		return nil, err
+	}
+
+	skilltree := newSkillTree(hero.Skills, hero.Class, hero.Stats, asset, l, ui)
 
 	miniPanel := newMiniPanel(asset, ui, l, isSinglePlayer)
 
@@ -221,12 +224,8 @@ func NewGameControls(
 	}
 
 	helpOverlay := NewHelpOverlay(asset, ui, l, keyMap)
-	hud := NewHUD(asset, ui, hero, miniPanel, actionableRegions, mapEngine, l, mapRenderer)
 
 	const blackAlpha50percent = 0x0000007f
-
-	hoverLabel := hud.nameLabel
-	hoverLabel.SetBackgroundColor(d2util.Color(blackAlpha50percent))
 
 	messageLog := NewMessageLog(asset, ui, renderer, l)
 
@@ -246,7 +245,6 @@ func NewGameControls(
 		questLog:       questLog,
 		HelpOverlay:    helpOverlay,
 		keyMap:         keyMap,
-		hud:            hud,
 		bottomMenuRect: &d2geom.Rectangle{
 			Left:   menuBottomRectX,
 			Top:    menuBottomRectY,
@@ -270,6 +268,12 @@ func NewGameControls(
 		lastRightBtnActionTime: 0,
 		isSinglePlayer:         isSinglePlayer,
 	}
+
+	hud := NewHUD(asset, ui, hero, miniPanel, actionableRegions, mapEngine, l, gc, mapRenderer)
+	gc.hud = hud
+
+	hoverLabel := hud.nameLabel
+	hoverLabel.SetBackgroundColor(d2util.Color(blackAlpha50percent))
 
 	gc.heroStatsPanel.SetOnCloseCb(gc.onCloseHeroStatsPanel)
 	gc.questLog.SetOnCloseCb(gc.onCloseQuestLog)
@@ -410,10 +414,7 @@ func (g *GameControls) OnKeyDown(event d2interface.KeyEvent) bool {
 	case d2enum.HoldRun:
 		g.hud.onToggleRunButton(true)
 	case d2enum.ToggleHelpScreen:
-		g.hud.miniPanel.openDisabled()
-
-		g.HelpOverlay.Toggle()
-		g.updateLayout()
+		g.toggleHelpOverlay()
 	default:
 		return false
 	}
@@ -449,6 +450,12 @@ func (g *GameControls) onEscKey() {
 	}
 
 	if g.inventory.IsOpen() {
+		if g.inventory.moveGoldPanel.IsOpen() {
+			g.inventory.moveGoldPanel.Close()
+
+			return
+		}
+
 		g.inventory.Close()
 
 		escHandled = true
@@ -473,7 +480,7 @@ func (g *GameControls) onEscKey() {
 	}
 
 	if g.HelpOverlay.IsOpen() {
-		g.HelpOverlay.Toggle()
+		g.HelpOverlay.Close()
 
 		escHandled = true
 	}
@@ -629,10 +636,12 @@ func (g *GameControls) OnMouseButtonDown(event d2interface.MouseEvent) bool {
 }
 
 func (g *GameControls) toggleHeroStatsPanel() {
-	g.questLog.Close()
-	g.heroStatsPanel.Toggle()
-	g.hud.miniPanel.SetMovedRight(g.heroStatsPanel.IsOpen())
-	g.updateLayout()
+	if !g.HelpOverlay.IsOpen() {
+		g.questLog.Close()
+		g.heroStatsPanel.Toggle()
+		g.hud.miniPanel.SetMovedRight(g.heroStatsPanel.IsOpen())
+		g.updateLayout()
+	}
 }
 
 func (g *GameControls) onCloseHeroStatsPanel() {
@@ -641,10 +650,12 @@ func (g *GameControls) onCloseHeroStatsPanel() {
 }
 
 func (g *GameControls) toggleQuestLog() {
-	g.heroStatsPanel.Close()
-	g.questLog.Toggle()
-	g.hud.miniPanel.SetMovedRight(g.questLog.IsOpen())
-	g.updateLayout()
+	if !g.HelpOverlay.IsOpen() {
+		g.heroStatsPanel.Close()
+		g.questLog.Toggle()
+		g.hud.miniPanel.SetMovedRight(g.questLog.IsOpen())
+		g.updateLayout()
+	}
 }
 
 func (g *GameControls) onCloseQuestLog() {
@@ -652,11 +663,22 @@ func (g *GameControls) onCloseQuestLog() {
 	g.updateLayout()
 }
 
+func (g *GameControls) toggleHelpOverlay() {
+	if !g.inventory.IsOpen() && !g.skilltree.IsOpen() && !g.heroStatsPanel.IsOpen() && !g.questLog.IsOpen() {
+		g.HelpOverlay.updateKeyMap(g.keyMap)
+		g.hud.miniPanel.openDisabled()
+		g.HelpOverlay.Toggle()
+		g.updateLayout()
+	}
+}
+
 func (g *GameControls) toggleInventoryPanel() {
-	g.skilltree.Close()
-	g.inventory.Toggle()
-	g.hud.miniPanel.SetMovedLeft(g.inventory.IsOpen())
-	g.updateLayout()
+	if !g.HelpOverlay.IsOpen() {
+		g.skilltree.Close()
+		g.inventory.Toggle()
+		g.hud.miniPanel.SetMovedLeft(g.inventory.IsOpen())
+		g.updateLayout()
+	}
 }
 
 func (g *GameControls) onCloseInventory() {
@@ -665,10 +687,12 @@ func (g *GameControls) onCloseInventory() {
 }
 
 func (g *GameControls) toggleSkilltreePanel() {
-	g.inventory.Close()
-	g.skilltree.Toggle()
-	g.hud.miniPanel.SetMovedLeft(g.skilltree.IsOpen())
-	g.updateLayout()
+	if !g.HelpOverlay.IsOpen() {
+		g.inventory.Close()
+		g.skilltree.Toggle()
+		g.hud.miniPanel.SetMovedLeft(g.skilltree.IsOpen())
+		g.updateLayout()
+	}
 }
 
 func (g *GameControls) onCloseSkilltree() {
@@ -703,6 +727,9 @@ func (g *GameControls) Load() {
 	g.messageLog.Load()
 	g.HelpOverlay.Load()
 
+	g.loadAddButtons()
+	g.setAddButtons()
+
 	miniPanelActions := &miniPanelActions{
 		characterToggle: g.toggleHeroStatsPanel,
 		inventoryToggle: g.toggleInventoryPanel,
@@ -718,10 +745,15 @@ func (g *GameControls) Load() {
 func (g *GameControls) Advance(elapsed float64) error {
 	g.mapRenderer.Advance(elapsed)
 	g.hud.Advance(elapsed)
+	g.inventory.Advance(elapsed)
 	g.messageLog.Advance(elapsed)
 
 	if err := g.escapeMenu.Advance(elapsed); err != nil {
 		return err
+	}
+
+	if g.heroStatsPanel.IsOpen() || g.skilltree.IsOpen() {
+		g.setAddButtons()
 	}
 
 	return nil
@@ -743,7 +775,7 @@ func (g *GameControls) updateLayout() {
 
 func (g *GameControls) isLeftPanelOpen() bool {
 	// https://github.com/OpenDiablo2/OpenDiablo2/issues/801
-	return g.heroStatsPanel.IsOpen() || g.questLog.IsOpen()
+	return g.heroStatsPanel.IsOpen() || g.questLog.IsOpen() || g.inventory.moveGoldPanel.IsOpen()
 }
 
 func (g *GameControls) isRightPanelOpen() bool {
@@ -1090,4 +1122,14 @@ func (g *GameControls) bindTerminalCommands(term d2interface.Terminal) error {
 	}
 
 	return nil
+}
+
+func (g *GameControls) setAddButtons() {
+	g.hud.addStatsButton.SetEnabled(g.hero.Stats.StatsPoints > 0)
+	g.hud.addSkillButton.SetEnabled(g.hero.Stats.SkillPoints > 0)
+}
+
+func (g *GameControls) loadAddButtons() {
+	g.hud.addStatsButton.OnActivated(func() { g.toggleHeroStatsPanel() })
+	g.hud.addSkillButton.OnActivated(func() { g.toggleSkilltreePanel() })
 }

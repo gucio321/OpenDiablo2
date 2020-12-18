@@ -1,7 +1,6 @@
 package d2gamescreen
 
 import (
-	"image/color"
 	"math"
 	"os"
 	"strconv"
@@ -190,7 +189,7 @@ func (v *CharacterSelect) OnLoad(loading d2screen.LoadingState) {
 
 		v.characterNameLabel[i] = v.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteUnits)
 		v.characterNameLabel[i].SetPosition(offsetX, offsetY)
-		v.characterNameLabel[i].Color[0] = rgbaColor(lightBrown)
+		v.characterNameLabel[i].Color[0] = d2util.Color(lightBrown)
 
 		offsetY += labelHeight
 
@@ -201,7 +200,7 @@ func (v *CharacterSelect) OnLoad(loading d2screen.LoadingState) {
 
 		v.characterExpLabel[i] = v.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteStatic)
 		v.characterExpLabel[i].SetPosition(offsetX, offsetY)
-		v.characterExpLabel[i].Color[0] = rgbaColor(lightGreen)
+		v.characterExpLabel[i].Color[0] = d2util.Color(lightGreen)
 	}
 
 	v.refreshGameStates()
@@ -230,7 +229,7 @@ func (v *CharacterSelect) loadHeroTitle() {
 
 func (v *CharacterSelect) loadDeleteCharConfirm() {
 	v.deleteCharConfirmLabel = v.uiManager.NewLabel(d2resource.Font16, d2resource.PaletteUnits)
-	lines := strings.Join(d2util.SplitIntoLinesWithMaxWidth(v.asset.TranslateLabel(delCharConfLabel), 30), "\n")
+	lines := strings.Join(d2util.SplitIntoLinesWithMaxWidth(v.asset.TranslateLabel(d2enum.DelCharConfLabel), 29), "\n")
 	v.deleteCharConfirmLabel.SetText(lines)
 	v.deleteCharConfirmLabel.Alignment = d2ui.HorizontalAlignCenter
 	deleteConfirmX, deleteConfirmY := 400, 185
@@ -267,31 +266,6 @@ func (v *CharacterSelect) loadCharScrollbar() {
 	v.charScrollbar.OnActivated(func() { v.onScrollUpdate() })
 }
 
-func rgbaColor(rgba uint32) color.RGBA {
-	result := color.RGBA{}
-	a, b, g, r := 0, 1, 2, 3
-	byteWidth := 8
-	byteMask := 0xff
-
-	for idx := 0; idx < 4; idx++ {
-		shift := idx * byteWidth
-		component := uint8(rgba>>shift) & uint8(byteMask)
-
-		switch idx {
-		case a:
-			result.A = component
-		case b:
-			result.B = component
-		case g:
-			result.G = component
-		case r:
-			result.R = component
-		}
-	}
-
-	return result
-}
-
 func (v *CharacterSelect) createButtons(loading d2screen.LoadingState) {
 	v.newCharButton = v.uiManager.NewButton(d2ui.ButtonTypeTall, strings.Join(
 		d2util.SplitIntoLinesWithMaxWidth(v.asset.TranslateString("#831"), 13), "\n"))
@@ -308,23 +282,23 @@ func (v *CharacterSelect) createButtons(loading d2screen.LoadingState) {
 	v.deleteCharButton.OnActivated(func() { v.onDeleteCharButtonClicked() })
 	v.deleteCharButton.SetPosition(deleteCharBtnX, deleteCharBtnY)
 
-	v.exitButton = v.uiManager.NewButton(d2ui.ButtonTypeMedium, v.asset.TranslateLabel(exitLabel))
+	v.exitButton = v.uiManager.NewButton(d2ui.ButtonTypeMedium, v.asset.TranslateLabel(d2enum.ExitLabel))
 	v.exitButton.SetPosition(exitBtnX, exitBtnY)
 	v.exitButton.OnActivated(func() { v.onExitButtonClicked() })
 
 	loading.Progress(twentyPercent)
 
-	v.deleteCharCancelButton = v.uiManager.NewButton(d2ui.ButtonTypeOkCancel, v.asset.TranslateLabel(noLabel))
+	v.deleteCharCancelButton = v.uiManager.NewButton(d2ui.ButtonTypeOkCancel, v.asset.TranslateLabel(d2enum.NoLabel))
 	v.deleteCharCancelButton.SetPosition(deleteCancelX, deleteCancelY)
 	v.deleteCharCancelButton.SetVisible(false)
 	v.deleteCharCancelButton.OnActivated(func() { v.onDeleteCharacterCancelClicked() })
 
-	v.deleteCharOkButton = v.uiManager.NewButton(d2ui.ButtonTypeOkCancel, v.asset.TranslateLabel(yesLabel))
+	v.deleteCharOkButton = v.uiManager.NewButton(d2ui.ButtonTypeOkCancel, v.asset.TranslateLabel(d2enum.YesLabel))
 	v.deleteCharOkButton.SetPosition(deleteOkX, deleteOkY)
 	v.deleteCharOkButton.SetVisible(false)
 	v.deleteCharOkButton.OnActivated(func() { v.onDeleteCharacterConfirmClicked() })
 
-	v.okButton = v.uiManager.NewButton(d2ui.ButtonTypeMedium, "OK")
+	v.okButton = v.uiManager.NewButton(d2ui.ButtonTypeMedium, v.asset.TranslateLabel(d2enum.OKLabel))
 	v.okButton.SetPosition(okBtnX, okBtnY)
 	v.okButton.OnActivated(func() { v.onOkButtonClicked() })
 }
@@ -411,7 +385,7 @@ func (v *CharacterSelect) Render(screen d2interface.Surface) {
 	}
 
 	if v.showDeleteConfirmation {
-		screen.DrawRect(screenWidth, screenHeight, rgbaColor(blackHalfOpacity))
+		screen.DrawRect(screenWidth, screenHeight, d2util.Color(blackHalfOpacity))
 		v.okCancelBox.RenderSegmented(screen, 2, 1, 0)
 		v.deleteCharConfirmLabel.Render(screen)
 	}

@@ -115,6 +115,11 @@ func (v *Label) SetText(newText string) {
 	v.BaseWidget.width, v.BaseWidget.height = v.font.GetTextMetrics(v.text)
 }
 
+// GetText returns label text
+func (v *Label) GetText() string {
+	return v.text
+}
+
 // SetBackgroundColor sets the background highlight color
 func (v *Label) SetBackgroundColor(c color.Color) {
 	v.backgroundColor = c
