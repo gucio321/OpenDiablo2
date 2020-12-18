@@ -715,11 +715,9 @@ func (menu *KeyBindingMenu) Advance(elapsed float64) error {
 }
 
 // Render draws the different element of the menu on the target surface
-func (menu *KeyBindingMenu) Render(target d2interface.Surface) error {
+func (menu *KeyBindingMenu) Render(target d2interface.Surface) {
 	if menu.IsOpen() {
-		if err := menu.Box.Render(target); err != nil {
-			return err
-		}
+		menu.Box.Render(target)
 
 		if menu.scrollbar != nil {
 			menu.scrollbar.Render(target)
@@ -734,6 +732,4 @@ func (menu *KeyBindingMenu) Render(target d2interface.Surface) error {
 			target.Pop()
 		}
 	}
-
-	return nil
 }
