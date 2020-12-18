@@ -11,6 +11,8 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
+var _ Widget = &Label{} // static check to ensure Label implemented widget
+
 // Label represents a user interface label
 type Label struct {
 	*BaseWidget
@@ -99,7 +101,6 @@ func (v *Label) Render(target d2interface.Surface) {
 
 // GetSize returns the size of the label
 func (v *Label) GetSize() (width, height int) {
-	//return v.font.GetTextMetrics(v.text)
 	return v.width, v.height
 }
 

@@ -5,13 +5,11 @@ import (
 	//"strings"
 	"fmt"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2asset"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2gui"
-	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2hero"
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2ui"
 )
 
@@ -92,14 +90,11 @@ const (
 	msgLogX, msgLogY          = 20, 20
 )
 
-// NewHeroStatsPanel creates a new hero status panel
+// NewMessageLog creates a new message log
 func NewMessageLog(asset *d2asset.AssetManager,
 	ui *d2ui.UIManager,
-	//heroName string,
-	//heroClass d2enum.Hero,
 	renderer d2interface.Renderer,
-	l d2util.LogLevel,
-	/*heroState *d2hero.HeroStatsState*/) *MessageLog {
+	l d2util.LogLevel) *MessageLog {
 	originX := 0
 	originY := 0
 
@@ -109,10 +104,7 @@ func NewMessageLog(asset *d2asset.AssetManager,
 		originX:   originX,
 		originY:   originY,
 		renderer:  renderer,
-		//heroState: heroState,
-		//heroName:  heroName,
-		//heroClass: heroClass,
-		labels: &StatsPanelLabels{},
+		labels:    &StatsPanelLabels{},
 	}
 
 	ml.Logger = d2util.NewLogger()
@@ -122,14 +114,11 @@ func NewMessageLog(asset *d2asset.AssetManager,
 	return ml
 }
 
-// HeroStatsPanel represents the hero status panel
+// MessageLog represents the message log
 type MessageLog struct {
 	asset      *d2asset.AssetManager
 	uiManager  *d2ui.UIManager
 	panel      *d2gui.Box
-	heroState  *d2hero.HeroStatsState
-	heroName   string
-	heroClass  d2enum.Hero
 	labels     *StatsPanelLabels
 	renderer   d2interface.Renderer
 	onCloseCb  func()
@@ -220,7 +209,7 @@ func (s *MessageLog) SetOnCloseCb(cb func()) {
 	s.onCloseCb = cb
 }
 
-// Advance updates labels on the panel
+/// Advance updates labels on the panel
 func (s *MessageLog) Advance(elapsed float64) {
 	if !s.isOpen {
 		return

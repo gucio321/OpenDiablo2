@@ -711,7 +711,8 @@ func getButtonLayouts() map[ButtonType]ButtonLayout {
 	}
 }
 
-var _ Widget = &Button{} // static check to ensure button implements widget
+var _ Widget = &Button{}          // static check to ensure button implements widget
+var _ ClickableWidget = &Button{} // static check to ensure button implemented clickable widget
 
 // Button defines a standard wide UI button
 type Button struct {
@@ -1021,7 +1022,7 @@ func (v *Button) SetPressed(pressed bool) {
 func (v *Button) SetVisible(visible bool) {
 	v.BaseWidget.SetVisible(visible)
 
-	if v.IsHovered() && !visible {
+	if v.isHovered() && !visible {
 		v.hoverEnd()
 	}
 }

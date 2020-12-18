@@ -11,6 +11,9 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 )
 
+// static check if Sprite implemented Widget
+var _ Widget = &Sprite{}
+
 // Sprite is a positioned visual object.
 type Sprite struct {
 	*BaseWidget
@@ -198,13 +201,4 @@ func (s *Sprite) Advance(elapsed float64) error {
 // SetEffect sets the draw effect type
 func (s *Sprite) SetEffect(e d2enum.DrawEffect) {
 	s.animation.SetEffect(e)
-}
-
-// SetVisible sets the pressed state of the button
-func (v *Sprite) SetVisible(visible bool) {
-	v.BaseWidget.SetVisible(visible)
-
-	if v.IsHovered() && !visible {
-		v.hoverEnd()
-	}
 }

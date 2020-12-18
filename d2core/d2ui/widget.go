@@ -27,7 +27,7 @@ type Widget interface {
 	OnMouseMove(x int, y int)
 	OnHoverStart(callback func())
 	OnHoverEnd(callback func())
-	IsHovered() bool
+	isHovered() bool
 	hoverStart()
 	hoverEnd()
 	Contains(x, y int) (contained bool)
@@ -55,7 +55,7 @@ type BaseWidget struct {
 	visible        bool
 
 	hovered        bool
-	OnHoverStartCb func()
+	onHoverStartCb func()
 	onHoverEndCb   func()
 }
 
@@ -119,14 +119,14 @@ func (b *BaseWidget) SetRenderPriority(prio RenderPriority) {
 
 // OnHoverStart sets a function that is called if the hovering of the widget starts
 func (b *BaseWidget) OnHoverStart(callback func()) {
-	b.OnHoverStartCb = callback
+	b.onHoverStartCb = callback
 }
 
 // HoverStart is called when the hovering of the widget starts
 func (b *BaseWidget) hoverStart() {
 	b.hovered = true
-	if b.OnHoverStartCb != nil {
-		b.OnHoverStartCb()
+	if b.onHoverStartCb != nil {
+		b.onHoverStartCb()
 	}
 }
 
@@ -143,7 +143,7 @@ func (b *BaseWidget) hoverEnd() {
 	}
 }
 
-func (b *BaseWidget) IsHovered() bool {
+func (b *BaseWidget) isHovered() bool {
 	return b.hovered
 }
 
@@ -163,10 +163,10 @@ func (b *BaseWidget) GetManager() (ui *UIManager) {
 // OnMouseMove is called when the mouse is moved
 func (b *BaseWidget) OnMouseMove(x, y int) {
 	if b.Contains(x, y) {
-		if !b.IsHovered() {
+		if !b.isHovered() {
 			b.hoverStart()
 		}
-	} else if b.IsHovered() {
+	} else if b.isHovered() {
 		b.hoverEnd()
 	}
 }

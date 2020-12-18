@@ -123,10 +123,10 @@ func (wg *WidgetGroup) OffsetPosition(x, y int) {
 func (wg *WidgetGroup) OnMouseMove(x, y int) {
 	for _, entry := range wg.entries {
 		if entry.Contains(x, y) && entry.GetVisible() {
-			if !entry.IsHovered() {
+			if !entry.isHovered() {
 				entry.hoverStart()
 			}
-		} else if entry.IsHovered() {
+		} else if entry.isHovered() {
 			entry.hoverEnd()
 		}
 	}
