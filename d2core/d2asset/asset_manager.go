@@ -226,9 +226,13 @@ func (am *AssetManager) LoadFont(tablePath, spritePath, palettePath string) (*d2
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	am.Debugf(fmtLoadFont, tablePath, spritePath, palettePath)
 
 	font, err := d2font.Load(tableData)
+=======
+	font, err := d2font.Load(tableData, sheet)
+>>>>>>> 7b637cbe (font table interpreter: moved d stuff responsible for font table into d2fileformats/d2font)
 	if err != nil {
 		return nil, fmt.Errorf("error while loading font table %s: %v", tablePath, err)
 	}

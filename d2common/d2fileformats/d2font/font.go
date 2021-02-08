@@ -50,6 +50,7 @@ func Load(data []byte) (*Font, error) {
 
 	font := &Font{
 		table: data,
+		sheet: sheet,
 		color: color.White,
 	}
 
