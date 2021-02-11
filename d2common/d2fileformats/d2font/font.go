@@ -1,6 +1,7 @@
 package d2font
 
 import (
+	"encoding/binary"
 	"fmt"
 	"image/color"
 	"strings"

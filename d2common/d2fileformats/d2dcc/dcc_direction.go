@@ -41,6 +41,7 @@ type DCCDirection struct {
 	HorizontalCellCount        int
 	VerticalCellCount          int
 	PixelBuffer                []DCCPixelBufferEntry
+	paletteValidate            [256]byte
 }
 
 // CreateDCCDirection creates an instance of a DCCDirection.
@@ -96,8 +97,8 @@ func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) *DCCDirection {
 	}
 
 	for paletteEntryCount, i := 0, 0; i < 256; i++ {
-		valid := bm.GetBit() != 0
-		if valid {
+		result.paletteValidate[i] = byte(bm.GetBit())
+		if result.paletteValidate[i] != 0 {
 			result.PaletteEntries[paletteEntryCount] = byte(i)
 			paletteEntryCount++
 		}
