@@ -1,0 +1,124 @@
+name: go-package
+
+on:
+  push:
+    branches: ['release']
+
+jobs:
+  build-bin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+          id: go
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libgl1-mesa-dev libsdl2-dev libasound2-dev > /dev/null 2>&1
+
+      - name: Build package
+        run: go build -o OpenDiablo2.bin .
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: OpenDiablo2.bin
+          asset_name: OpenDiablo2.bin
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "This is my release text"
+
+  build-AppImage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+          id: go
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libgl1-mesa-dev libsdl2-dev libasound2-dev > /dev/null 2>&1
+          sudo apt-get install -y appstream
+
+      - name: create ouput dir
+        run: |
+          mkdir OpenDiablo2.AppDir
+
+      - name: download icon
+        run: |
+          wget https://cdn4.iconfinder.com/data/icons/core-ui-outlined/32/outlined_placeholder-512.png -o OpenDiablo2.AppDir/icon.png
+
+      - name: build go package
+        run: |
+          go build -o OpenDiablo2.AppDir/main.bin
+
+      - name: create .desktop entry
+        run: |
+          echo -e "[Desktop Entry]\n
+          Type=Application\n
+          Name=OpenDiablo 2\n
+          Icon=icon
+          NoDisplay=false\n
+          StartupNotify=true\n
+          Categories=Game;\n" >> OpenDiablo2.AppDir/Desktop.desktop
+
+      - name: create AppRun
+        run: |
+          echo "#!/bin/sh
+          cd \"\$(dirname \"\$0\")\"
+          exec ./main.bin" >> OpenDiablo2.AppDir/AppRun
+          chmod 755 OpenDiablo2.AppDir/AppRun
+
+      - name: setup AppImageTool
+        run: |
+          wget "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod a+x appimagetool-x86_64.AppImage
+
+      - name: building AppImage
+        run: ./appimagetool-x86_64.AppImage OpenDiablo2.AppDir OpenDiablo2.AppImage
+
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: OpenDiablo2.AppImage
+          asset_name: OpenDiablo2.AppImage
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "This is my release text"
+
+  build-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+          id: go
+
+      - name: Build package
+        run: go build -o OpenDiablo2.exe .
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: OpenDiablo2.exe
+          asset_name: OpenDiablo2.exe
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "This is my release text"
