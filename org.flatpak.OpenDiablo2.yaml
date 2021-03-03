@@ -1,0 +1,12 @@
+app-id: org.flatpak.OpenDiablo2
+sdk: org.freedesktop.Sdk
+command: ./OpenDiablo2
+modules:
+  - name: hello
+    buildsystem: simple
+    build-commands:
+      - install -D OpenDiablo2 /usr/bin/hello.sh
+    sources:
+      - type: file
+        path: OpenDiablo2
+

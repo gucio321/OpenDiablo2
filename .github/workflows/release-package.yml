@@ -111,7 +111,24 @@ jobs:
       options: --privileged
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Go 1.15
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.15
+          id: go
+
+      - name: release
+        run: cat /etc/*release
+
+      - name: Install dependencies
+        run: |
+          sudo dnf -y update
+          sudo dnf install -y libX11-devel libXcursor-devel libXrandr-devel libXinerama-devel mesa-libGL-devel alsa-lib-devel libXi-devel
+          sudo dnf install -y gcc libXxf86vm-devel-1.1.4-14.fc33.x86_64 libXxf86vm-1.1.4-14.fc33.x86_64
+
+      - name: build go package
+        run: |
+          go build -o OpenDiablo2.AppDir/main.bin
       - uses: bilelmoussaoui/flatpak-github-actions@v2
         with:
-          bundle: "palette.flatpak"
-          manifest-path: "org.gnome.zbrown.Palette.yml"
+          manifest-path: "org.flatpak.OpenDiablo2.yaml"
