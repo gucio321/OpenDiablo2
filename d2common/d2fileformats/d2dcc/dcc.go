@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"errors"
+	"log"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
 )
@@ -70,6 +71,147 @@ func Load(fileData []byte) (*DCC, error) {
 	os.Exit(0)
 
 	return result, nil
+}
+
+func (d *DCC) Marshal() []byte {
+	sw := d2datautils.CreateStreamWriter()
+
+	sw.PushBytes(byte(d.Signature))
+	sw.PushBytes(byte(d.Version))
+	sw.PushBytes(byte(d.NumberOfDirections))
+	sw.PushInt32(int32(d.FramesPerDirection))
+	// must be 1
+	sw.PushInt32(1)
+
+	// not used - total size coded
+	sw.PushInt32(0)
+
+	for i := 0; i < d.NumberOfDirections; i++ {
+		sw.PushInt32(int32(d.directionOffsets[i]))
+	}
+
+	var crazyBitTable = []byte{0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 26, 28, 30, 32}
+	searchByte := func(index int) {
+		for i, v := range crazyBitTable {
+			if int(v) == index {
+				sw.PushBits(byte(i), 4)
+
+				break
+			}
+		}
+	}
+
+	//for i := 0; i < result.NumberOfDirections; i++ {
+	i := 0
+	sw.PushUint32(uint32(d.Directions[i].OutSizeCoded))
+	sw.PushBits(byte(d.Directions[i].CompressionFlags), 2)
+	/*for i, v := range crazyBitTable {
+		if int(v) == d.Directions[i].Variable0Bits {
+			sw.PushBits(byte(i), 4)
+
+			break
+		}
+	}*/
+	searchByte(d.Directions[i].Variable0Bits)
+	searchByte(d.Directions[i].WidthBits)
+	searchByte(d.Directions[i].HeightBits)
+	searchByte(d.Directions[i].XOffsetBits)
+	searchByte(d.Directions[i].YOffsetBits)
+	searchByte(d.Directions[i].OptionalDataBits)
+	searchByte(d.Directions[i].CodedBytesBits)
+	for frameIdx := 0; frameIdx < d.FramesPerDirection; frameIdx++ {
+		if d.Directions[i].Variable0Bits != 0 {
+			log.Print("encoder doesn't support this for now")
+
+			return nil
+		}
+
+		sw.PushBits32(
+			uint32(d.Directions[i].Frames[frameIdx].Width),
+			d.Directions[i].WidthBits,
+		)
+
+		sw.PushBits32(
+			uint32(d.Directions[i].Frames[frameIdx].Height),
+			d.Directions[i].HeightBits,
+		)
+
+		sw.PushBits32(
+			uint32(d.Directions[i].Frames[frameIdx].XOffset),
+			d.Directions[i].XOffsetBits,
+		)
+
+		sw.PushBits32(
+			uint32(d.Directions[i].Frames[frameIdx].YOffset),
+			d.Directions[i].YOffsetBits,
+		)
+
+		sw.PushBits32(
+			uint32(d.Directions[i].Frames[frameIdx].NumberOfOptionalBytes),
+			d.Directions[i].OptionalDataBits,
+		)
+
+		sw.PushBits32(
+			uint32(d.Directions[i].Frames[frameIdx].NumberOfCodedBytes),
+			d.Directions[i].CodedBytesBits,
+		)
+
+		sw.PushBit(d.Directions[i].Frames[frameIdx].FrameIsBottomUp)
+	}
+
+	// here should be optional data (not suported yet
+
+	if (d.Directions[i].CompressionFlags & 0x2) > 0 {
+		sw.PushBits32(uint32(d.Directions[i].EqualCellsBitstreamSize), 20)
+	}
+
+	sw.PushBits32(uint32(d.Directions[i].PixelMaskBitstreamSize), 20)
+
+	if (d.Directions[i].CompressionFlags & 0x1) > 0 {
+		sw.PushBits32(uint32(d.Directions[i].EncodingTypeBitsreamSize), 20)
+		sw.PushBits32(uint32(d.Directions[i].RawPixelCodesBitstreamSize), 20)
+	}
+
+	for p, idx := 0, 0; p < 256; p++ {
+		if d.Directions[i].PaletteEntries[idx] == byte(p) {
+			sw.PushBit(true)
+			idx++
+		} else {
+			sw.PushBit(false)
+		}
+	}
+
+	/*
+		So, I know that:
+		bitstreams are set in order:
+		equalCell, pixel mask, encoding type, raw pixel codes
+	*/
+
+	pbIdx := 0
+	//for _, frame := range v.Frames {
+	frame := d.Directions[i].Frames[0]
+
+	originCellX := (frame.Box.Left - v.Box.Left) / cellsPerRow
+	originCellY := (frame.Box.Top - v.Box.Top) / cellsPerRow
+
+	//for cellY := 0; cellY < frame.VerticalCellCount; cellY++ {
+	cellY := 0
+
+	currentCellY := cellY + originCellY
+
+	//for cellX := 0; cellX < frame.HorizontalCellCount; cellX++ {
+
+	currentCell := originCellX + cellX + (currentCellY * v.HorizontalCellCount)
+	nextCell := false
+
+	if d.EqualCellBitstreamSize > 0 {
+	}
+	//}
+	//}
+	//}
+	//}
+
+	return sw.GetBytes()
 }
 
 // decodeDirection decodes and returns the given direction

@@ -7,9 +7,11 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/go-restruct/restruct v1.2.0-alpha
-	github.com/google/uuid v1.1.2
-	github.com/gravestench/akara v0.0.0-20201014060234-a64208a7fd3c
-	github.com/hajimehoshi/ebiten/v2 v2.0.2
+	github.com/google/uuid v1.2.0
+	github.com/gravestench/akara v0.0.0-20210116041952-513d453f9ca8
+	github.com/hajimehoshi/ebiten/v2 v2.0.6
+	github.com/hajimehoshi/oto v0.7.1 // indirect
+	github.com/hajimehoshi/wasmserve v0.0.0-20210211132404-f94a97dc1500 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/profile v1.5.0
 	github.com/robertkrimen/otto v0.0.0-20200922221731-ef014fd054ac
