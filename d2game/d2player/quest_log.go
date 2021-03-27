@@ -119,7 +119,7 @@ func NewQuestLog(asset *d2asset.AssetManager,
 		tabs[i] = questLogTab{}
 	}
 
-	// nolint:gomnd // this is only test, it also should come from save file
+	// this is only test, it also should come from save file
 	mpa := 2
 
 	ql := &QuestLog{

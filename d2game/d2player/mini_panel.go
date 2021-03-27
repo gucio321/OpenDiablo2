@@ -117,7 +117,7 @@ func (m *miniPanel) createWidgets(actions *miniPanelActions) {
 		return
 	}
 
-	// nolint:golint,gomnd // divide by 2 does not need a magic number
+	// nolint:gomnd // divide by 2 does not need a magic number
 	x, y := screenWidth/2+containerOffsetX, screenHeight+containerOffsetY
 	m.container.SetPosition(x, y)
 	m.panelGroup.AddWidget(m.container)
@@ -138,18 +138,20 @@ func (m *miniPanel) createButtons(actions *miniPanelActions) {
 
 	buttonWidth++
 
-	// nolint:golint,gomnd // divide by 2 does not need a magic number
 	x, y = screenWidth/2+buttonOffsetX, screenHeight+buttonOffsetY-buttonHeight
 	buttonsFirst := []miniPanelContent{
-		{d2ui.ButtonTypeMinipanelCharacter,
+		{
+			d2ui.ButtonTypeMinipanelCharacter,
 			actions.characterToggle,
 			m.asset.TranslateString("minipanelchar"),
 		},
-		{d2ui.ButtonTypeMinipanelInventory,
+		{
+			d2ui.ButtonTypeMinipanelInventory,
 			actions.inventoryToggle,
 			m.asset.TranslateString("minipanelinv"),
 		},
-		{d2ui.ButtonTypeMinipanelSkill,
+		{
+			d2ui.ButtonTypeMinipanelSkill,
 			actions.skilltreeToggle,
 			m.asset.TranslateString("minipaneltree"),
 		},
@@ -163,7 +165,8 @@ func (m *miniPanel) createButtons(actions *miniPanelActions) {
 	idxOffset := len(buttonsFirst)
 
 	if !m.isSinglePlayer {
-		partyContent := miniPanelContent{d2ui.ButtonTypeMinipanelParty,
+		partyContent := miniPanelContent{
+			d2ui.ButtonTypeMinipanelParty,
 			actions.partyToggle,
 			m.asset.TranslateString("minipanelparty"),
 		}
@@ -175,19 +178,23 @@ func (m *miniPanel) createButtons(actions *miniPanelActions) {
 	}
 
 	buttonsLast := []miniPanelContent{
-		{d2ui.ButtonTypeMinipanelAutomap,
+		{
+			d2ui.ButtonTypeMinipanelAutomap,
 			actions.automapToggle,
 			m.asset.TranslateString("minipanelautomap"),
 		},
-		{d2ui.ButtonTypeMinipanelMessage,
+		{
+			d2ui.ButtonTypeMinipanelMessage,
 			actions.messageToggle,
 			m.asset.TranslateString("minipanelmessage"),
 		},
-		{d2ui.ButtonTypeMinipanelQuest,
+		{
+			d2ui.ButtonTypeMinipanelQuest,
 			actions.questToggle,
 			m.asset.TranslateString("minipanelquest"),
 		},
-		{d2ui.ButtonTypeMinipanelMen,
+		{
+			d2ui.ButtonTypeMinipanelMen,
 			actions.menuToggle,
 			m.asset.TranslateString("minipanelmenubtn"),
 		},

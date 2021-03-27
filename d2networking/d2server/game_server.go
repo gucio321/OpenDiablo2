@@ -28,7 +28,7 @@ const logPrefix = "Game Server"
 
 const (
 	port                   = "6669"
-	chunkSize          int = 4096 // nolint:deadcode,unused,varcheck // WIP
+	chunkSize          int = 4096 // nolint:deadcode,varcheck // WIP
 	subtilesPerTile        = 5
 	middleOfTileOffset     = 3
 )
@@ -410,7 +410,6 @@ func (g *GameServer) handleClientConnection(client ClientConnection, x, y float6
 			conPlayerState.RightSkill,
 			conPlayerState.Gold,
 		)
-
 		if err != nil {
 			g.Errorf("AddPlayerPacket: %v", err)
 		}
@@ -446,7 +445,6 @@ func (g *GameServer) OnClientDisconnected(client ClientConnection) {
 
 // OnPacketReceived is called when a packet has been received from a remote client,
 // and by the local client to 'send' a packet to the server,
-// nolint:gocyclo // switch statement on packet type makes sense, no need to change
 func (g *GameServer) OnPacketReceived(client ClientConnection, packet d2netpacket.NetPacket) error {
 	if g == nil {
 		return errors.New("game server is nil")

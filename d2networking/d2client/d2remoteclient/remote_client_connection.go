@@ -62,7 +62,6 @@ func (r *RemoteClientConnection) Open(connectionString, saveFilePath string) err
 	}
 
 	tcpAddress, err := net.ResolveTCPAddr("tcp", connectionString)
-
 	if err != nil {
 		return err
 	}
@@ -187,7 +186,6 @@ func (r *RemoteClientConnection) bytesToJSON(buffer []byte) (string, d2netpacket
 
 // decodeToPacket unmarshals the JSON string into the correct struct
 // and returns a NetPacket declaring that struct.
-// nolint:gocyclo,funlen // switch statement on packet type makes sense, no need to change
 func (r *RemoteClientConnection) decodeToPacket(
 	t d2netpackettype.NetPacketType,
 	data string) (d2netpacket.NetPacket, error) {

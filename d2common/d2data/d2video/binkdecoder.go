@@ -91,7 +91,7 @@ func CreateBinkDecoder(source []byte) (*BinkDecoder, error) {
 
 // GetNextFrame gets the next frame
 func (v *BinkDecoder) GetNextFrame() error {
-	//nolint:gocritic // v.streamReader.SetPosition(uint64(v.FrameIndexTable[i] & 0xFFFFFFFE))
+	// v.streamReader.SetPosition(uint64(v.FrameIndexTable[i] & 0xFFFFFFFE))
 	lengthOfAudioPackets, err := v.streamReader.ReadUInt32()
 	if err != nil {
 		return err

@@ -47,7 +47,7 @@ type DCCDirection struct {
 // nolint:funlen // no need to reduce
 func CreateDCCDirection(bm *d2datautils.BitMuncher, file *DCC) *DCCDirection {
 	// nolint:gomnd // constant
-	var crazyBitTable = []byte{0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 26, 28, 30, 32}
+	crazyBitTable := []byte{0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 26, 28, 30, 32}
 
 	result := &DCCDirection{
 		OutSizeCoded:     int(bm.GetUInt32()),
@@ -278,7 +278,7 @@ func (v *DCCDirection) generateFrames(pcd *d2datautils.BitMuncher) {
 
 //nolint:funlen,gocognit,gocyclo // can't reduce
 func (v *DCCDirection) fillPixelBuffer(pcd, ec, pm, et, rp *d2datautils.BitMuncher) {
-	var pixelMaskLookup = []int{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4}
+	pixelMaskLookup := []int{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4}
 
 	lastPixel := uint32(0)
 	maxCellX := 0
@@ -428,7 +428,6 @@ func (v *DCCDirection) calculateCells() {
 		cellWidths[v.HorizontalCellCount-1] = v.Box.Width - (4 * (v.HorizontalCellCount - 1))
 	}
 	// Calculate the cell heights
-	// nolint:gomnd // constant
 	cellHeights := make([]int, v.VerticalCellCount)
 	if v.VerticalCellCount == 1 {
 		cellHeights[0] = v.Box.Height

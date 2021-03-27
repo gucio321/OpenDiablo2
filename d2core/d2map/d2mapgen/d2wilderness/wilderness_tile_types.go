@@ -1,7 +1,6 @@
 // Package d2wilderness provides an enumeration of wilderness types
 package d2wilderness
 
-// nolint:golint // these don't require individual explanations.
 const (
 	TreeBorderSouth int = iota + 4
 	TreeBorderWest
