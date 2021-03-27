@@ -223,7 +223,7 @@ func (v *Stream) loadBlock(blockIndex, expectedLength uint32) ([]byte, error) {
 	return data, nil
 }
 
-//nolint:gomnd,funlen,gocyclo // Will fix enum values later, can't help function length
+//nolint:gomnd,gocyclo // Will fix enum values later, can't help function length
 func decompressMulti(data []byte /*expectedLength*/, _ uint32) ([]byte, error) {
 	compressionType := data[0]
 

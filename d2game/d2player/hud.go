@@ -188,7 +188,6 @@ func (h *HUD) Load() {
 	h.loadCustomWidgets()
 	h.loadUIButtons()
 
-	// nolint:gomnd // dividing by 2 (const)
 	h.addStatsButton = h.uiManager.NewButton(d2ui.ButtonTypeAddSkill, "")
 	h.addStatsButton.SetPosition(addStatsButtonX, addStatsButtonY)
 	h.addStatsButton.SetVisible(false)

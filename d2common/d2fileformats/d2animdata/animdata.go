@@ -117,7 +117,7 @@ func (ad *AnimationData) DeleteEntry(name string) error {
 }
 
 // Load loads the data into an AnimationData struct
-//nolint:gocognit,funlen // can't reduce
+//nolint:gocognit // can't reduce
 func Load(data []byte) (*AnimationData, error) {
 	reader := d2datautils.CreateStreamReader(data)
 	animdata := &AnimationData{}

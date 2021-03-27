@@ -345,7 +345,7 @@ func (s *diablo2Stat) canBeCombinedWith(other d2stats.Stat) bool {
 }
 
 // String returns the formatted description string
-func (s *diablo2Stat) String() string { //nolint:gocyclo // switch statement is not so bad
+func (s *diablo2Stat) String() string {
 	var result string
 
 	for idx := range s.values {

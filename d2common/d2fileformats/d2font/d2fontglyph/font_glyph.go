@@ -3,7 +3,6 @@ package d2fontglyph
 
 // Create creates a new font glyph
 func Create(frame, width, height int) *FontGlyph {
-	// nolint:gomnd // thes bytes are constant
 	// comes from https://d2mods.info/forum/viewtopic.php?t=42044
 	result := &FontGlyph{
 		frame:  frame,
