@@ -8,7 +8,22 @@ import (
 )
 
 // TextDictionary is a string map
-type TextDictionary map[string]string
+type TextDictionary struct {
+	regular map[string]string
+	noName  []string
+}
+
+func (td *TextDictionary) TranslateRegular(key string) (string, error) {
+	value, ok := td.regular[key]
+	if !ok {
+		return "unknown", fmt.Errorf("key %s doesn't exist", key)
+	}
+
+	return value, nil
+}
+
+func (td *TextDictionary) TranslateNoName(k string) {
+}
 
 func (td TextDictionary) loadHashEntries(hashEntries []*textDictionaryHashEntry, br *d2datautils.StreamReader) error {
 	for i := 0; i < len(hashEntries); i++ {
@@ -116,7 +131,10 @@ const (
 
 // LoadTextDictionary loads the text dictionary from the given data
 func LoadTextDictionary(dictionaryData []byte) (TextDictionary, error) {
-	lookupTable := make(TextDictionary)
+	result := &TextDictionary{
+		regular: make(map[string]string),
+		noName:  make([]string, nil),
+	}
 
 	br := d2datautils.CreateStreamReader(dictionaryData)
 
@@ -167,12 +185,12 @@ func LoadTextDictionary(dictionaryData []byte) (TextDictionary, error) {
 
 	hashEntries := make([]*textDictionaryHashEntry, hashTableSize)
 
-	err = lookupTable.loadHashEntries(hashEntries, br)
+	err = result.loadHashEntries(hashEntries, br)
 	if err != nil {
 		return nil, fmt.Errorf("loading has entries: %v", err)
 	}
 
-	return lookupTable, nil
+	return result, nil
 }
 
 // Marshal encodes text dictionary back into byte slice
