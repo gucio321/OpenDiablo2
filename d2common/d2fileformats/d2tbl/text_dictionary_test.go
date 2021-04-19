@@ -9,6 +9,7 @@ func exampleData() *TextDictionary {
 		"abc":        "def",
 		"someStr":    "Some long string",
 		"teststring": "TeStxwsas123 long strin122*8:wq",
+		"#2":         "no-named string",
 	}
 
 	return result
@@ -16,7 +17,7 @@ func exampleData() *TextDictionary {
 
 func TestTBL_Marshal(t *testing.T) {
 	tbl := exampleData()
-	data := tbl.Marshal()
+	data := tbl.Marshal(OutputDataSimple)
 
 	newTbl, err := LoadTextDictionary(data)
 	if err != nil {
@@ -41,7 +42,7 @@ func TestTBL_MarshalNoNameString(t *testing.T) {
 		"#0": "OKEY",
 	}
 
-	data := tbl.Marshal()
+	data := tbl.Marshal(OutputDataOriginal)
 
 	newTbl, err := LoadTextDictionary(data)
 	if err != nil {

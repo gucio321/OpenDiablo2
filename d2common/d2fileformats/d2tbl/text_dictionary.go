@@ -7,6 +7,16 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2datautils"
 )
 
+// OutputDataType determinates the way, the output of Marshal
+// method will be.
+type OutputDataType bool
+
+const (
+	// in the original converter
+	OutputDataOriginal OutputDataType = false
+	OutputDataSimple   OutputDataType = true
+)
+
 // TextDictionary is a string map
 type TextDictionary map[string]string
 
@@ -176,7 +186,7 @@ func LoadTextDictionary(dictionaryData []byte) (TextDictionary, error) {
 }
 
 // Marshal encodes text dictionary back into byte slice
-func (td *TextDictionary) Marshal() []byte {
+func (td *TextDictionary) Marshal(od OutputDataType) []byte {
 	sw := d2datautils.CreateStreamWriter()
 
 	// https://github.com/OpenDiablo2/OpenDiablo2/issues/1043
@@ -224,7 +234,7 @@ func (td *TextDictionary) Marshal() []byte {
 
 		sw.PushUint32(uint32(dataPos))
 
-		if key[0] == '#' {
+		if key[0] == '#' && od == OutputDataOriginal {
 			// 1 for X, and 1 for separator
 			dataPos += 2
 		} else {
@@ -241,7 +251,7 @@ func (td *TextDictionary) Marshal() []byte {
 	for _, key := range keys {
 		value := (*td)[key]
 
-		if key[0] == '#' {
+		if key[0] == '#' && od == OutputDataOriginal {
 			key = "x"
 		}
 
