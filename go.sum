@@ -1,5 +1,7 @@
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/JensRantil/go-csv v0.0.0-20200923162218-7ffda755f61b h1:NTLYgAUvy7Gme9LjhjKKnHbXh6Oa9bGRJhtoYYZHL+E=
+github.com/JensRantil/go-csv v0.0.0-20200923162218-7ffda755f61b/go.mod h1:eKbrbm8Ogk9sqit6scxi3LSXCZojdF9ZLGp4ugMu/JQ=
 github.com/JoshVarga/blast v0.0.0-20180421040937-681c804fb9f0 h1:tDnuU0igiBiQFjsvq1Bi7DpoUjqI76VVvW045vpeFeM=
 github.com/JoshVarga/blast v0.0.0-20180421040937-681c804fb9f0/go.mod h1:h/5OEGj4G+fpYxluLjSMZbFY011ZxAntO98nCl8mrCs=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 h1:JYp7IbQjafoB+tBA3gMyHYHrpOtNuDiK/uB5uXxq5wM=

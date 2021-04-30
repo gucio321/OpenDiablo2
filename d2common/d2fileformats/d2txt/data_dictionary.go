@@ -15,6 +15,7 @@ type DataDictionary struct {
 	r      *csv.Reader
 	record []string
 	Err    error
+	Cache  [][]string
 }
 
 // LoadDataDictionary loads the contents of a spreadsheet style txt file
@@ -45,6 +46,7 @@ func LoadDataDictionary(buf []byte) *DataDictionary {
 func (d *DataDictionary) Next() bool {
 	var err error
 	d.record, err = d.r.Read()
+	d.Cache = append(d.Cache, d.record)
 
 	if err == io.EOF {
 		return false
@@ -60,9 +62,19 @@ func (d *DataDictionary) Next() bool {
 	return true
 }
 
+// StringAt returns value of field given on given position
+func (d *DataDictionary) StringAt(pos int, field string) string {
+	for pos < len(d.Cache)-1 {
+		if !d.Next() {
+			log.Panic("no record found")
+		}
+	}
+	return d.Cache[pos][d.lookup[field]]
+}
+
 // String gets a string from the given column
 func (d *DataDictionary) String(field string) string {
-	return d.record[d.lookup[field]]
+	return d.StringAt(len(d.Cache)-1, field)
 }
 
 // Number gets a number for the given column
@@ -89,4 +101,10 @@ func (d *DataDictionary) Bool(field string) bool {
 	}
 
 	return n == 1
+}
+
+func (d *DataDictionary) LoadAll() {
+	for d.Next() {
+		// noop
+	}
 }
