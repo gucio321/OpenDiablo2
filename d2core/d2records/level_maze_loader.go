@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func levelMazeDetailsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -18,10 +18,6 @@ func levelMazeDetailsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			SizeY:             d.Number("SizeY"),
 		}
 		records[record.LevelID] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d LevelMazeDetail records", len(records))

@@ -3,7 +3,7 @@ package d2records
 import (
 	"fmt"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 const (
@@ -41,5 +41,5 @@ func rareItemAffixLoader(d *d2txt.DataDictionary) ([]*RareItemAffix, error) {
 		records = append(records, record)
 	}
 
-	return records, d.Err
+	return records, nil
 }

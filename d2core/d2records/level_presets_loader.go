@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadLevelPresets loads level presets from text file
@@ -43,10 +43,6 @@ func levelPresetLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 	}
 
 	r.Debugf("Loaded %d LevelPresets records", len(records))
-
-	if d.Err != nil {
-		return d.Err
-	}
 
 	r.Level.Presets = records
 

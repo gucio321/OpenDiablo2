@@ -5,7 +5,7 @@ import (
 
 	"github.com/gravestench/akara"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 //	Name
@@ -94,5 +94,5 @@ func uniqueMonsterAffixCommonLoader(d *d2txt.DataDictionary) (UniqueMonsterAffix
 		records[record.StringTableKey] = record
 	}
 
-	return records, d.Err
+	return records, nil
 }

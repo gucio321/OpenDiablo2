@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func cubeRecipeLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -15,13 +15,13 @@ func cubeRecipeLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 	// There are repeated fields and sections in this file, some
 	// of which have inconsistent naming conventions. These slices
 	// are a simple way to handle them.
-	var outputFields = []string{"output", "output b", "output c"}
+	outputFields := []string{"output", "output b", "output c"}
 
-	var outputLabels = []string{"", "b ", "c "}
+	outputLabels := []string{"", "b ", "c "}
 
-	var propLabels = []string{"mod 1", "mod 2", "mod 3", "mod 4", "mod 5"}
+	propLabels := []string{"mod 1", "mod 2", "mod 3", "mod 4", "mod 5"}
 
-	var inputFields = []string{"input 1", "input 2", "input 3", "input 4", "input 5", "input 6", "input 7"}
+	inputFields := []string{"input 1", "input 2", "input 3", "input 4", "input 5", "input 6", "input 7"}
 
 	for d.Next() {
 		class, err := classFieldToEnum(d.String("class"))
@@ -92,10 +92,6 @@ func cubeRecipeLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		records = append(records, record)
 	}
 
-	if d.Err != nil {
-		return d.Err
-	}
-
 	r.Debugf("Loaded %d CubeRecipe records", len(records))
 
 	r.Item.Cube.Recipes = records
@@ -126,7 +122,6 @@ func newCubeRecipeItem(f string) (CubeRecipeItem, error) {
 		}
 
 		count, err := strconv.Atoi(strings.Split(arg, "=")[1])
-
 		if err != nil {
 			// need to be verified
 			return item, fmt.Errorf("error parsing item count %e", err)

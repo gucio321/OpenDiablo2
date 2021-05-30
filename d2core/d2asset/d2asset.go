@@ -25,18 +25,19 @@ func NewAssetManager(logLevel d2util.LogLevel) (*AssetManager, error) {
 	logger.SetLevel(logLevel)
 
 	manager := &AssetManager{
-		Logger:     logger,
-		Loader:     loader,
-		tables:     make([]d2tbl.TextDictionary, 0),
-		animations: d2cache.CreateCache(animationBudget),
-		fonts:      d2cache.CreateCache(fontBudget),
-		palettes:   d2cache.CreateCache(paletteBudget),
-		transforms: d2cache.CreateCache(paletteTransformBudget),
-		dt1s:       d2cache.CreateCache(dt1Budget),
-		ds1s:       d2cache.CreateCache(ds1Budget),
-		cofs:       d2cache.CreateCache(cofBudget),
-		dccs:       d2cache.CreateCache(dccBudget),
-		Records:    records,
+		Logger:       logger,
+		Loader:       loader,
+		tables:       make([]d2tbl.TextDictionary, 0),
+		animations:   d2cache.CreateCache(animationBudget),
+		fonts:        d2cache.CreateCache(fontBudget),
+		palettes:     d2cache.CreateCache(paletteBudget),
+		transforms:   d2cache.CreateCache(paletteTransformBudget),
+		dictionaries: d2cache.CreateCache(txtBudget),
+		dt1s:         d2cache.CreateCache(dt1Budget),
+		ds1s:         d2cache.CreateCache(ds1Budget),
+		cofs:         d2cache.CreateCache(cofBudget),
+		dccs:         d2cache.CreateCache(dccBudget),
+		Records:      records,
 	}
 
 	return manager, err

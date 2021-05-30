@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadMonModes loads monster records
@@ -15,10 +15,6 @@ func monsterModeLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			Code:  d.String("code"),
 		}
 		records[record.Name] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d MonMode records", len(records))

@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func booksLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -22,10 +22,6 @@ func booksLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			CostPerCharge:   d.Number("CostPerCharge"),
 		}
 		records[record.Namco] = record
-	}
-
-	if d.Err != nil {
-		panic(d.Err)
 	}
 
 	r.Debugf("Loaded %d Book records", len(records))

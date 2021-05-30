@@ -2,7 +2,7 @@ package d2records
 
 import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 /*	first column of experience.txt
@@ -62,10 +62,6 @@ func experienceLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			Ratio: d.Number("ExpRatio"),
 		}
 		breakpoints[record.Level] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d ExperienceBreakpoint records", len(breakpoints))

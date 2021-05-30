@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // nolint:funlen // cant reduce
@@ -96,10 +96,6 @@ func beltsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			Box16Bottom: d.Number("box16bottom"),
 		}
 		records[record.Name] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d Belt records", len(records))

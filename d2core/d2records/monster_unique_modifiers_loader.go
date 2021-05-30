@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func monsterUniqModifiersLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -42,10 +42,6 @@ func monsterUniqModifiersLoader(r *RecordManager, d *d2txt.DataDictionary) error
 		records[record.Name] = record
 
 		constants = append(constants, d.Number("constants"))
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d MonsterUniqueModifier records", len(records))

@@ -19,7 +19,7 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2records"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2font"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2dat"
@@ -41,6 +41,7 @@ const (
 	fontBudget             = 128
 	paletteBudget          = 64
 	paletteTransformBudget = 64
+	txtBudget              = 64
 	dt1Budget              = 4096 * 2048 * 128
 	ds1Budget              = 4096 * 2048 * 128
 	cofBudget              = 4096 * 2048 * 128
@@ -74,6 +75,7 @@ type AssetManager struct {
 	fonts            d2interface.Cache
 	palettes         d2interface.Cache
 	transforms       d2interface.Cache
+	dictionaries     d2interface.Cache
 	Records          *d2records.RecordManager
 	language         string
 	languageModifier int
@@ -339,20 +341,27 @@ func (am *AssetManager) LoadPaletteTransform(path string) (*d2pl2.PL2, error) {
 
 // LoadDataDictionary loads a txt data file
 func (am *AssetManager) LoadDataDictionary(path string) (*d2txt.DataDictionary, error) {
-	// we purposefully do not cache data dictionaries because we are already
-	// caching the file data. The underlying csv.Reader does not implement io.Seeker,
-	// so after it has been iterated through, we cannot iterate through it again.
-	//
-	// The easy way around this is to not cache d2txt.DataDictionary objects, and just create
-	// a new instance from cached file data if/when we ever need to reload the data dict
+	if txt, found := am.dictionaries.Retrieve(path); found {
+		return txt.(*d2txt.DataDictionary), nil
+	}
+
 	data, err := am.LoadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	txt, err := d2txt.Load(data)
 	if err != nil {
 		return nil, err
 	}
 
 	am.Debugf(fmtLoadDict, path)
 
-	return d2txt.LoadDataDictionary(data), nil
+	if err := am.dictionaries.Insert(path, txt, 1); err != nil {
+		return nil, err
+	}
+
+	return txt, nil
 }
 
 // LoadRecords will load the records for the given path into the record manager.
@@ -444,6 +453,7 @@ func (am *AssetManager) commandAssetSpam(term d2interface.Terminal) func([]strin
 		am.palettes.SetVerbose(verbose)
 		am.fonts.SetVerbose(verbose)
 		am.transforms.SetVerbose(verbose)
+		am.dictionaries.SetVerbose(verbose)
 		am.animations.SetVerbose(verbose)
 		am.dt1s.SetVerbose(verbose)
 		am.ds1s.SetVerbose(verbose)
@@ -456,7 +466,7 @@ func (am *AssetManager) commandAssetSpam(term d2interface.Terminal) func([]strin
 
 func (am *AssetManager) commandAssetStat(term d2interface.Terminal) func([]string) error {
 	return func([]string) error {
-		var cacheStatistics = func(c d2interface.Cache) float64 {
+		cacheStatistics := func(c d2interface.Cache) float64 {
 			const percent = 100.0
 			return float64(c.GetWeight()) / float64(c.GetBudget()) * percent
 		}
@@ -473,6 +483,7 @@ func (am *AssetManager) commandAssetStat(term d2interface.Terminal) func([]strin
 func (am *AssetManager) commandAssetClear([]string) error {
 	am.palettes.Clear()
 	am.transforms.Clear()
+	am.dictionaries.Clear()
 	am.animations.Clear()
 	am.fonts.Clear()
 	am.dt1s.Clear()

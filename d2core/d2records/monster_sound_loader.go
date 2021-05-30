@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // Information gathered from [https://d2mods.info/forum/kb/viewarticle?a=418]
@@ -51,10 +51,6 @@ func monsterSoundsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[record.ID] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d MonsterSound records", len(records))

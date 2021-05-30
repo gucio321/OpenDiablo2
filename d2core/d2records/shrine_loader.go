@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func shrineLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -23,10 +23,6 @@ func shrineLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[record.ShrineName] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Object.Shrines = records

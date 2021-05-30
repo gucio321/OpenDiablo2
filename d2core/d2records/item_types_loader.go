@@ -2,7 +2,7 @@ package d2records
 
 import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadItemTypes loads ItemType records
@@ -70,10 +70,6 @@ func itemTypesLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 
 	for idx := range records {
 		records[idx].EquivalentItems = equivMap[records[idx].Code]
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d ItemType records", len(records))

@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadProperties loads gem records into a map[string]*PropertiesRecord
@@ -59,10 +59,6 @@ func propertyLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[record.Code] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Properties = records

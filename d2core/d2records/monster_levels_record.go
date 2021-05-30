@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func monsterLevelsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -46,10 +46,6 @@ func monsterLevelsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			},
 		}
 		records[record.Level] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d MonsterLevel records", len(records))

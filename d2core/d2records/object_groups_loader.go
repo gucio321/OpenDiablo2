@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadObjectGroups loads the ObjectGroupRecords into ObjectGroups.
@@ -26,10 +26,6 @@ func objectGroupsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			Wells:     wells,
 		}
 		records[record.Offset] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d ObjectGroup records", len(records))

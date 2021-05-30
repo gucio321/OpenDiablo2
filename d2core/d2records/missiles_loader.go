@@ -3,7 +3,7 @@ package d2records
 import (
 	"strings"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation"
 )
@@ -298,10 +298,6 @@ func missilesLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 
 		records[record.Id] = record
 		r.missilesByName[sanitizeMissilesKey(record.Name)] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d Missile records", len(records))

@@ -3,7 +3,7 @@ package d2records
 import (
 	"strconv"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadItemRatios loads all of the ItemRatioRecords from ItemRatio.txt
@@ -49,10 +49,6 @@ func itemRatioLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[record.Function+strconv.FormatBool(record.Version)] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d ItemRatio records", len(records))

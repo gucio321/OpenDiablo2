@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadGems loads gem records into a map[string]*GemRecord
@@ -54,10 +54,6 @@ func gemsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[gem.Name] = gem
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d Gem records", len(records))

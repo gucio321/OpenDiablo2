@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // Loadrecords loads SoundEntries from sounds.txt
@@ -38,10 +38,6 @@ func soundDetailsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[entry.Handle] = entry
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Sound.Details = records

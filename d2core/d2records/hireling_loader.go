@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadHireling loads hireling data into []*HirelingRecord
@@ -84,10 +84,6 @@ func hirelingLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			Shield:          d.Number("Shield"),
 		}
 		records = append(records, hireling)
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d Hireling records", len(records))

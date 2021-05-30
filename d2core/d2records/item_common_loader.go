@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
@@ -173,10 +173,6 @@ func loadCommonItems(d *d2txt.DataDictionary, source d2enum.InventoryItemType) (
 		}
 
 		records[record.Code] = record
-	}
-
-	if d.Err != nil {
-		return nil, d.Err
 	}
 
 	return records, nil

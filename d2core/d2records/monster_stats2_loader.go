@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadMonStats2 loads MonStat2Records from monstats2.txt
@@ -155,10 +155,6 @@ func monsterStats2Loader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[record.Key] = record
-	}
-
-	if d.Err != nil {
-		panic(d.Err)
 	}
 
 	r.Debugf("Loaded %d MonStat2 records", len(records))

@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadMonPresets loads monster presets from monpresets.txt
@@ -15,10 +15,6 @@ func monsterPresetLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		}
 
 		records[act] = append(records[act], d.String("Place"))
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d MonPreset records", len(records))

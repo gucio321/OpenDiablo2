@@ -1,6 +1,6 @@
 package d2records
 
-import "github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+import "github.com/gucio321/d2txt"
 
 // recordLoader represents something that can load a data dictionary and
 // handles placing it in the record manager exports

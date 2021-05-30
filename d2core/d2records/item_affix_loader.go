@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 // LoadMagicPrefix loads MagicPrefix.txt
@@ -42,7 +42,7 @@ func magicSuffixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 }
 
 func getAffixString(t1 d2enum.ItemAffixSuperType, t2 d2enum.ItemAffixSubType) string {
-	var name = ""
+	name := ""
 
 	if t2 == d2enum.ItemAffixMagic {
 		name = "Magic"
@@ -144,10 +144,6 @@ func createItemAffixRecords(
 		group.AddMember(affix)
 
 		records[affix.Name] = affix
-	}
-
-	if d.Err != nil {
-		return nil, nil, d.Err
 	}
 
 	return records, groups, nil

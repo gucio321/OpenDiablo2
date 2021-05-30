@@ -1,7 +1,7 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 )
@@ -159,10 +159,6 @@ func levelDetailsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 			ObjectGroupSpawnChance7:    d.Number("ObjPrb7"),
 		}
 		records[record.ID] = record
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d LevelDetail records", len(records))

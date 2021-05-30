@@ -2,7 +2,7 @@ package d2records
 
 import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2txt"
+	"github.com/gucio321/d2txt"
 )
 
 func difficultyLevelsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
@@ -36,10 +36,6 @@ func difficultyLevelsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		case "Hell":
 			records[d2enum.DifficultyHell] = record
 		}
-	}
-
-	if d.Err != nil {
-		return d.Err
 	}
 
 	r.Debugf("Loaded %d DifficultyLevel records", len(records))
