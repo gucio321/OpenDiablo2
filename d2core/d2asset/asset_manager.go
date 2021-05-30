@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/gucio321/d2dc6"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2cof"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2ds1"
@@ -23,7 +25,6 @@ import (
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2dat"
-	"github.com/gucio321/d2dc6"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2dcc"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2pl2"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2tbl"
@@ -456,7 +457,7 @@ func (am *AssetManager) commandAssetSpam(term d2interface.Terminal) func([]strin
 
 func (am *AssetManager) commandAssetStat(term d2interface.Terminal) func([]string) error {
 	return func([]string) error {
-		var cacheStatistics = func(c d2interface.Cache) float64 {
+		cacheStatistics := func(c d2interface.Cache) float64 {
 			const percent = 100.0
 			return float64(c.GetWeight()) / float64(c.GetBudget()) * percent
 		}
