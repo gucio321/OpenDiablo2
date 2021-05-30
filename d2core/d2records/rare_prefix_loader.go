@@ -5,14 +5,9 @@ import (
 )
 
 func rareItemPrefixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := rareItemAffixLoader(d)
-	if err != nil {
-		return err
-	}
+	r.Item.Rare.Prefix = rareItemAffixLoader(d)
 
-	r.Item.Rare.Prefix = records
-
-	r.Debugf("Loaded %d RarePrefix records", len(records))
+	r.Debugf("Loaded %d RarePrefix records", len(r.Item.Rare.Prefix))
 
 	return nil
 }

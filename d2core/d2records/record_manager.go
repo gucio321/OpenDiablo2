@@ -3,11 +3,12 @@ package d2records
 import (
 	"fmt"
 
+	"github.com/gucio321/d2txt"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2animdata"
-	"github.com/gucio321/d2txt"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2resource"
 )
 

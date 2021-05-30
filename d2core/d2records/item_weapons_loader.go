@@ -8,10 +8,7 @@ import (
 
 // LoadWeapons loads weapon records
 func weaponsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := loadCommonItems(d, d2enum.InventoryItemTypeWeapon)
-	if err != nil {
-		return err
-	}
+	records := loadCommonItems(d, d2enum.InventoryItemTypeWeapon)
 
 	r.Debugf("Loaded %d Weapon records", len(records))
 

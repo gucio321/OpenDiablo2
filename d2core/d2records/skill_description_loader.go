@@ -1,8 +1,9 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation/d2parser"
 	"github.com/gucio321/d2txt"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation/d2parser"
 )
 
 // Loadrecords loads skill description records from skilldesc.txt

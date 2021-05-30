@@ -3,9 +3,10 @@ package d2records
 import (
 	"fmt"
 
+	"github.com/gucio321/d2txt"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2calculation/d2parser"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
-	"github.com/gucio321/d2txt"
 )
 
 // LoadSkills loads skills.txt file contents into a skill record map

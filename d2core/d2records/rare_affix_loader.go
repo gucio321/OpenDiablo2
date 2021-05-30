@@ -14,7 +14,7 @@ const (
 	fmtRareAffixExclude = "etype%d"
 )
 
-func rareItemAffixLoader(d *d2txt.DataDictionary) ([]*RareItemAffix, error) {
+func rareItemAffixLoader(d *d2txt.DataDictionary) []*RareItemAffix {
 	records := make([]*RareItemAffix, 0)
 
 	for d.Next() {
@@ -41,5 +41,5 @@ func rareItemAffixLoader(d *d2txt.DataDictionary) ([]*RareItemAffix, error) {
 		records = append(records, record)
 	}
 
-	return records, nil
+	return records
 }

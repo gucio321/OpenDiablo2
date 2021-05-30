@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/gucio321/d2txt"
+
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2cof"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2ds1"
@@ -19,7 +21,6 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2core/d2records"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2font"
-	"github.com/gucio321/d2txt"
 
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2dat"
@@ -315,6 +316,7 @@ func (am *AssetManager) TranslateString(input interface{}) string {
 }
 
 // LoadPaletteTransform loads a palette transform file
+// nolint:dupl // it is ok for now
 func (am *AssetManager) LoadPaletteTransform(path string) (*d2pl2.PL2, error) {
 	if pl2, found := am.transforms.Retrieve(path); found {
 		return pl2.(*d2pl2.PL2), nil
@@ -340,6 +342,7 @@ func (am *AssetManager) LoadPaletteTransform(path string) (*d2pl2.PL2, error) {
 }
 
 // LoadDataDictionary loads a txt data file
+// nolint:dupl // it is ok
 func (am *AssetManager) LoadDataDictionary(path string) (*d2txt.DataDictionary, error) {
 	if txt, found := am.dictionaries.Retrieve(path); found {
 		return txt.(*d2txt.DataDictionary), nil

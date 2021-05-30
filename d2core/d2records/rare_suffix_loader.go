@@ -5,10 +5,7 @@ import (
 )
 
 func rareItemSuffixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := rareItemAffixLoader(d)
-	if err != nil {
-		return err
-	}
+	records := rareItemAffixLoader(d)
 
 	r.Debugf("Loaded %d RareSuffix records", len(records))
 

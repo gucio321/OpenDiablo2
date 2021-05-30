@@ -13,32 +13,26 @@ const (
 )
 
 func treasureClassLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := treasureClassCommonLoader(d)
-	if err != nil {
-		return err
-	}
-
-	r.Item.Treasure.Normal = records
+	records := treasureClassCommonLoader(d)
 
 	r.Debugf("Loaded %d TreasureClass (normal) records", len(records))
+
+	r.Item.Treasure.Normal = records
 
 	return nil
 }
 
 func treasureClassExLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := treasureClassCommonLoader(d)
-	if err != nil {
-		return err
-	}
-
-	r.Item.Treasure.Expansion = records
+	records := treasureClassCommonLoader(d)
 
 	r.Debugf("Loaded %d TreasureClass (expansion) records", len(records))
+
+	r.Item.Treasure.Expansion = records
 
 	return nil
 }
 
-func treasureClassCommonLoader(d *d2txt.DataDictionary) (TreasureClass, error) {
+func treasureClassCommonLoader(d *d2txt.DataDictionary) TreasureClass {
 	records := make(TreasureClass)
 
 	for d.Next() {
@@ -84,5 +78,5 @@ func treasureClassCommonLoader(d *d2txt.DataDictionary) (TreasureClass, error) {
 		records[record.Name] = record
 	}
 
-	return records, nil
+	return records
 }

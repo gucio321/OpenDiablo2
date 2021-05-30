@@ -1,8 +1,9 @@
 package d2records
 
 import (
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/gucio321/d2txt"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 )
 
 func difficultyLevelsLoader(r *RecordManager, d *d2txt.DataDictionary) error {

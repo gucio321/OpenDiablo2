@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/gucio321/d2txt"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 )
 
 func cubeRecipeLoader(r *RecordManager, d *d2txt.DataDictionary) error {

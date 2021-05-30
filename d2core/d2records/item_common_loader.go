@@ -11,7 +11,7 @@ import (
 )
 
 // nolint:funlen // cant reduce
-func loadCommonItems(d *d2txt.DataDictionary, source d2enum.InventoryItemType) (CommonItems, error) {
+func loadCommonItems(d *d2txt.DataDictionary, source d2enum.InventoryItemType) CommonItems {
 	records := make(CommonItems)
 
 	for d.Next() {
@@ -175,7 +175,7 @@ func loadCommonItems(d *d2txt.DataDictionary, source d2enum.InventoryItemType) (
 		records[record.Code] = record
 	}
 
-	return records, nil
+	return records
 }
 
 func createItemVendorParams(d *d2txt.DataDictionary) map[string]*ItemVendorParams {

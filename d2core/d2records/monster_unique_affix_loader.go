@@ -52,32 +52,26 @@ const (
 )
 
 func uniqueMonsterPrefixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := uniqueMonsterAffixCommonLoader(d)
-	if err != nil {
-		return err
-	}
-
-	r.Monster.Name.Prefix = records
+	records := uniqueMonsterAffixCommonLoader(d)
 
 	r.Debugf("Loaded %d UniqueMonsterPrefix records", len(records))
+
+	r.Monster.Name.Prefix = records
 
 	return nil
 }
 
 func uniqueMonsterSuffixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := uniqueMonsterAffixCommonLoader(d)
-	if err != nil {
-		return err
-	}
-
-	r.Monster.Name.Suffix = records
+	records := uniqueMonsterAffixCommonLoader(d)
 
 	r.Debugf("Loaded %d UniqueMonsterSuffix records", len(records))
+
+	r.Monster.Name.Suffix = records
 
 	return nil
 }
 
-func uniqueMonsterAffixCommonLoader(d *d2txt.DataDictionary) (UniqueMonsterAffixes, error) {
+func uniqueMonsterAffixCommonLoader(d *d2txt.DataDictionary) UniqueMonsterAffixes {
 	records := make(UniqueMonsterAffixes)
 
 	for d.Next() {
@@ -94,5 +88,5 @@ func uniqueMonsterAffixCommonLoader(d *d2txt.DataDictionary) (UniqueMonsterAffix
 		records[record.StringTableKey] = record
 	}
 
-	return records, nil
+	return records
 }

@@ -11,10 +11,7 @@ func armorLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 		return nil // already loaded
 	}
 
-	records, err := loadCommonItems(d, d2enum.InventoryItemTypeArmor)
-	if err != nil {
-		return err
-	}
+	records := loadCommonItems(d, d2enum.InventoryItemTypeArmor)
 
 	r.Debugf("Loaded %d Armor Item records", len(records))
 

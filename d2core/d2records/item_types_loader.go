@@ -3,8 +3,9 @@ package d2records
 import (
 	"log"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/gucio321/d2txt"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 )
 
 // LoadItemTypes loads ItemType records

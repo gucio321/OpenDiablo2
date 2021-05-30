@@ -8,10 +8,7 @@ import (
 
 // LoadMiscItems loads ItemCommonRecords from misc.txt
 func miscItemsLoader(r *RecordManager, d *d2txt.DataDictionary) error {
-	records, err := loadCommonItems(d, d2enum.InventoryItemTypeItem)
-	if err != nil {
-		return err
-	}
+	records := loadCommonItems(d, d2enum.InventoryItemTypeItem)
 
 	r.Debugf("Loaded %d Misc Item records", len(records))
 

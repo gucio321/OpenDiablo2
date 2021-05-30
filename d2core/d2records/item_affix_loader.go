@@ -3,8 +3,9 @@ package d2records
 import (
 	"fmt"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/gucio321/d2txt"
+
+	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 )
 
 // LoadMagicPrefix loads MagicPrefix.txt
@@ -13,10 +14,7 @@ func magicPrefixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 
 	subType := d2enum.ItemAffixMagic
 
-	affixes, groups, err := loadAffixDictionary(r, d, superType, subType)
-	if err != nil {
-		return err
-	}
+	affixes, groups := loadAffixDictionary(r, d, superType, subType)
 
 	r.Item.Magic.Prefix = affixes
 	r.Item.MagicPrefixGroups = groups
@@ -30,10 +28,7 @@ func magicSuffixLoader(r *RecordManager, d *d2txt.DataDictionary) error {
 
 	subType := d2enum.ItemAffixMagic
 
-	affixes, groups, err := loadAffixDictionary(r, d, superType, subType)
-	if err != nil {
-		return err
-	}
+	affixes, groups := loadAffixDictionary(r, d, superType, subType)
 
 	r.Item.Magic.Suffix = affixes
 	r.Item.MagicSuffixGroups = groups
@@ -63,23 +58,20 @@ func loadAffixDictionary(
 	d *d2txt.DataDictionary,
 	superType d2enum.ItemAffixSuperType,
 	subType d2enum.ItemAffixSubType,
-) (map[string]*ItemAffixCommonRecord, ItemAffixGroups, error) {
-	records, groups, err := createItemAffixRecords(d, superType, subType)
-	if err != nil {
-		return nil, nil, err
-	}
+) (map[string]*ItemAffixCommonRecord, ItemAffixGroups) {
+	records, groups := createItemAffixRecords(d, superType, subType)
 
 	name := getAffixString(superType, subType)
 	r.Debugf("Loaded %d %s records", len(records), name)
 
-	return records, groups, nil
+	return records, groups
 }
 
 func createItemAffixRecords(
 	d *d2txt.DataDictionary,
 	superType d2enum.ItemAffixSuperType,
 	subType d2enum.ItemAffixSubType,
-) (map[string]*ItemAffixCommonRecord, ItemAffixGroups, error) {
+) (map[string]*ItemAffixCommonRecord, ItemAffixGroups) {
 	records := make(map[string]*ItemAffixCommonRecord)
 	groups := make(ItemAffixGroups)
 
@@ -146,5 +138,5 @@ func createItemAffixRecords(
 		records[affix.Name] = affix
 	}
 
-	return records, groups, nil
+	return records, groups
 }
