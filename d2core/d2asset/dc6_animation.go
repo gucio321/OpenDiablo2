@@ -6,9 +6,9 @@ import (
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2enum"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2util"
 
-	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2dc6"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2fileformats/d2dcc"
 	"github.com/OpenDiablo2/OpenDiablo2/d2common/d2interface"
+	"github.com/gucio321/d2dc6"
 )
 
 var _ d2interface.Animation = &DC6Animation{} // Static check to confirm struct conforms to
@@ -112,9 +112,7 @@ func (a *DC6Animation) decodeDirection(directionIndex int) error {
 }
 
 func (a *DC6Animation) decodeFrame(directionIndex, frameIndex int) animationFrame {
-	startFrame := directionIndex * int(a.dc6.FramesPerDirection)
-
-	dc6Frame := a.dc6.Frames[startFrame+frameIndex]
+	dc6Frame := a.dc6.Frames[directionIndex][frameIndex]
 
 	frame := animationFrame{
 		width:   int(dc6Frame.Width),
@@ -165,9 +163,8 @@ func (a *DC6Animation) createFrameSurface(directionIndex, frameIndex int) (d2int
 		a.directions[directionIndex].frames[frameIndex] = frame
 	}
 
-	startFrame := directionIndex * int(a.dc6.FramesPerDirection)
-	dc6Frame := a.dc6.Frames[startFrame+frameIndex]
-	indexData := a.dc6.DecodeFrame(startFrame + frameIndex)
+	dc6Frame := a.dc6.Frames[directionIndex][frameIndex]
+	indexData := a.dc6.DecodeFrame(directionIndex, frameIndex)
 	colorData := d2util.ImgIndexToRGBA(indexData, a.palette)
 
 	if a.renderer == nil {
