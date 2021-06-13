@@ -58,10 +58,10 @@ type DC6Animation struct {
 }
 
 func (a *DC6Animation) init() error {
-	a.directions = make([]animationDirection, a.dc6.Directions)
+	a.directions = make([]animationDirection, a.dc6.Frames.NumberOfDirections())
 
 	for directionIndex := range a.directions {
-		a.directions[directionIndex].frames = make([]animationFrame, a.dc6.FramesPerDirection)
+		a.directions[directionIndex].frames = make([]animationFrame, a.dc6.Frames.FramesPerDirection())
 	}
 
 	err := a.decode()
@@ -102,7 +102,7 @@ func (a *DC6Animation) decode() error {
 }
 
 func (a *DC6Animation) decodeDirection(directionIndex int) error {
-	for frameIndex := 0; frameIndex < int(a.dc6.FramesPerDirection); frameIndex++ {
+	for frameIndex := 0; frameIndex < a.dc6.Frames.FramesPerDirection(); frameIndex++ {
 		frame := a.decodeFrame(directionIndex, frameIndex)
 		a.directions[directionIndex].frames[frameIndex] = frame
 	}
@@ -113,7 +113,7 @@ func (a *DC6Animation) decodeDirection(directionIndex int) error {
 }
 
 func (a *DC6Animation) decodeFrame(directionIndex, frameIndex int) animationFrame {
-	dc6Frame := a.dc6.Frames[directionIndex][frameIndex]
+	dc6Frame := a.dc6.Frames.Direction(directionIndex).Frame(frameIndex)
 
 	frame := animationFrame{
 		width:   int(dc6Frame.Width),
@@ -139,7 +139,7 @@ func (a *DC6Animation) createSurfaces() error {
 }
 
 func (a *DC6Animation) createDirectionSurfaces(directionIndex int) error {
-	for frameIndex := 0; frameIndex < int(a.dc6.FramesPerDirection); frameIndex++ {
+	for frameIndex := 0; frameIndex < a.dc6.Frames.FramesPerDirection(); frameIndex++ {
 		if !a.directions[directionIndex].decoded {
 			err := a.decodeDirection(directionIndex)
 			if err != nil {
@@ -164,7 +164,7 @@ func (a *DC6Animation) createFrameSurface(directionIndex, frameIndex int) (d2int
 		a.directions[directionIndex].frames[frameIndex] = frame
 	}
 
-	dc6Frame := a.dc6.Frames[directionIndex][frameIndex]
+	dc6Frame := a.dc6.Frames.Direction(directionIndex).Frame(frameIndex)
 	indexData := a.dc6.DecodeFrame(directionIndex, frameIndex)
 	colorData := d2util.ImgIndexToRGBA(indexData, a.palette)
 

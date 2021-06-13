@@ -21,10 +21,14 @@ github.com/gravestench/akara v0.0.0-20201014060234-a64208a7fd3c h1:WopE590cKxkcK
 github.com/gravestench/akara v0.0.0-20201014060234-a64208a7fd3c/go.mod h1:fTeda1SogMg5Lkd4lXMEd/Pk/a5/gQuLGaAI2rn1PBQ=
 github.com/gravestench/bitstream v0.0.0-20210528070038-71f100eecd4f h1:Yg5jKErPisFgWMWinvRyE63MkpySeubdpDv83O31Vs0=
 github.com/gravestench/bitstream v0.0.0-20210528070038-71f100eecd4f/go.mod h1:FsgbN421v5maou5iKEE+7Rjzc9kaPVjCkqG4eQulejE=
+github.com/gravestench/bitstream v0.0.0-20210602033510-6e018ddc185f h1:RylukO1Wy+GixLCRtLZqj0sd1PcYuabOWcHEp0Wmvdc=
+github.com/gravestench/bitstream v0.0.0-20210602033510-6e018ddc185f/go.mod h1:FsgbN421v5maou5iKEE+7Rjzc9kaPVjCkqG4eQulejE=
 github.com/gucio321/d2dc6 v0.0.0-20210530101257-f1c5d7e08af6 h1:0VzfcQUKNDPyeOLwhBS73+yEMhQSwyEvB2T9owDcJLg=
 github.com/gucio321/d2dc6 v0.0.0-20210530101257-f1c5d7e08af6/go.mod h1:/ruiEIwhO+2vHf1wV8WQvsnIYmMUEmE8FyEOT1wJpyY=
 github.com/gucio321/d2dc6 v0.0.0-20210530101810-801687ce7fb2 h1:h0x6l/CStmdgGy14oogAhtUssXiG3r+8vyL/pnoX8tU=
 github.com/gucio321/d2dc6 v0.0.0-20210530101810-801687ce7fb2/go.mod h1:/ruiEIwhO+2vHf1wV8WQvsnIYmMUEmE8FyEOT1wJpyY=
+github.com/gucio321/d2dc6 v0.0.0-20210613084217-c31a036361ea h1:7Ui5LCMecSD6WqfrAi14aHLlji4XqUlwA4tZ6W5zlgQ=
+github.com/gucio321/d2dc6 v0.0.0-20210613084217-c31a036361ea/go.mod h1:6CbMcmvM0UePIWnCDsn+mH9DjLfC45UmfztdXuSLlqY=
 github.com/hajimehoshi/bitmapfont/v2 v2.1.0/go.mod h1:2BnYrkTQGThpr/CY6LorYtt/zEPNzvE/ND69CRTaHMs=
 github.com/hajimehoshi/ebiten/v2 v2.0.2 h1:t8HXO9hJfKlS9tNhht8Ov6xecag0gRl7AkfKgC9hcLE=
 github.com/hajimehoshi/ebiten/v2 v2.0.2/go.mod h1:AbHP/SS226aFTex/izULVwW0D2AuGyqC4AVwilmRjOg=
