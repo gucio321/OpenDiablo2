@@ -83,7 +83,6 @@ var (
 		d2enum.KeyKP7:          ebiten.KeyKP7,
 		d2enum.KeyKP8:          ebiten.KeyKP8,
 		d2enum.KeyKP9:          ebiten.KeyKP9,
-		d2enum.KeyKPAdd:        ebiten.KeyKPAdd,
 		d2enum.KeyKPDecimal:    ebiten.KeyKPDecimal,
 		d2enum.KeyKPDivide:     ebiten.KeyKPDivide,
 		d2enum.KeyKPEnter:      ebiten.KeyKPEnter,

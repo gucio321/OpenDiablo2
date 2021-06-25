@@ -109,6 +109,9 @@ func (l *Label) SetText(text string) error {
 
 func (l *Label) setText(text string) error {
 	width, height := l.font.GetTextMetrics(text)
+	if width <= 0 || height <= 0 {
+		width, height = 1, 1
+	}
 
 	surface := l.renderer.NewSurface(width, height)
 
